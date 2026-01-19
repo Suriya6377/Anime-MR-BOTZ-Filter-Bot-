@@ -63,7 +63,9 @@ class Media2(Document):
 
 def get_ott_by_filename(filename):
     filename = filename.lower()
-    if "amzn" in filename or "amazon" in filename:
+    if "jiocinema" in filename or "jio" in filename or "jhs" in filename or "jiohotstar" in filename:
+        return "Jio Hotstar"
+    elif "amzn" in filename or "amazon" in filename:
         return "Amazon Prime Video"
     elif "nf" in filename or "netflix" in filename:
         return "Netflix"
@@ -73,8 +75,6 @@ def get_ott_by_filename(filename):
         return "Zee5"
     elif "sonyliv" in filename or "sl" in filename:
         return "SonyLIV"
-    elif "jiocinema" in filename or "jio" in filename:
-        return "JioCinema"
     elif "hbo" in filename:
         return "HBO Max"
     elif "apple" in filename or "atvp" in filename:
