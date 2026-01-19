@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinterest Mini</title>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-blur: 15px;
+            --text-color: #ffffff;
+            --card-radius: 16px;
+            --btn-radius: 30px;
+            --primary-color: #e60023; /* Pinterest Red-ish */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            background-attachment: fixed;
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Search Header Container */
+        .header-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            z-index: 1000;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Search Bar */
+        .search-wrapper {
+            width: 100%;
+            padding: 15px 20px 10px 20px;
+            display: flex;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .search-bar {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            align-items: center;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--btn-radius);
+            padding: 5px 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-bar input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-icon {
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+        }
+
+        /* Category Scroll Bar */
+        .category-scroll {
+            width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 5px 15px 15px 15px;
+            box-sizing: border-box;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+            display: flex;
+            gap: 10px;
+            justify-content: flex-start; /* Align left */
+        }
+
+        /* Center categories on larger screens if they fit */
+        @media (min-width: 768px) {
+            .category-scroll {
+                justify-content: center;
+            }
+        }
+
+        .category-scroll::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        .category-pill {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .category-pill:hover, .category-pill.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* Masonry Grid */
+        .grid-container {
+            column-count: 2;
+            column-gap: 15px;
+            padding: 130px 15px 20px 15px; /* Added more top padding for header + categories */
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            .grid-container {
+                column-count: 3;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .grid-container {
+                column-count: 4;
+            }
+        }
+
+        /* Glass Card */
+        .card {
+            break-inside: avoid;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--card-radius);
+            margin-bottom: 15px;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-bottom: 1px solid var(--glass-border);
+            cursor: pointer;
+        }
+
+        /* Card Footer */
+        .card-footer {
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60%;
+        }
+
+        /* Download Button */
+        .download-btn {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .download-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Loading & Empty States */
+        .loading, .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 18px;
+            grid-column: span 2;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: white;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <div class="search-wrapper">
+            <div class="search-bar">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="searchInput" placeholder="Search for ideas...">
+            </div>
+        </div>
+
+        <div class="category-scroll" id="categoryScroll">
+            <div class="category-pill active" onclick="searchCategory('aesthetic wallpapers', this)">All</div>
+            <div class="category-pill" onclick="searchCategory('marvel 4k', this)">Marvel</div>
+            <div class="category-pill" onclick="searchCategory('anime aesthetic', this)">Anime</div>
+            <div class="category-pill" onclick="searchCategory('dark photography', this)">Dark</div>
+            <div class="category-pill" onclick="searchCategory('cars 4k', this)">Cars</div>
+            <div class="category-pill" onclick="searchCategory('nature aesthetic', this)">Nature</div>
+            <div class="category-pill" onclick="searchCategory('quotes motivation', this)">Quotes</div>
+            <div class="category-pill" onclick="searchCategory('cyberpunk art', this)">Cyberpunk</div>
+            <div class="category-pill" onclick="searchCategory('iphone wallpapers', this)">iPhone</div>
+            <div class="category-pill" onclick="searchCategory('cats cute', this)">Cats</div>
+        </div>
+    </div>
+
+    <div class="grid-container" id="grid">
+        <!-- Images will be injected here -->
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const grid = document.getElementById('grid');
+        let timeout = null;
+
+        // Default Search on Load
+        window.addEventListener('load', () => {
+            fetchImages('aesthetic wallpapers');
+        });
+
+        // Search Input Handler
+        searchInput.addEventListener('input', (e) => {
+            // Remove active state from pills when typing manual search
+            document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                const query = e.target.value.trim();
+                if (query.length > 0) {
+                    fetchImages(query);
+                }
+            }, 600); // Debounce
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+             if (e.key === 'Enter') {
+                 clearTimeout(timeout);
+                 const query = searchInput.value.trim();
+                 if (query.length > 0) {
+                     fetchImages(query);
+                 }
+             }
+        });
+
+        function searchCategory(query, element) {
+            // Update Active Pill
+            document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+            element.classList.add('active');
+
+            // Update Search Bar
+            searchInput.value = query;
+
+            // Fetch
+            fetchImages(query);
+        }
+
+        async function fetchImages(query) {
+            grid.innerHTML = '<div class="loading"><div class="spinner"></div>Searching...</div>';
+
+            try {
+                const response = await fetch(`/pinterest/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    grid.innerHTML = `<div class="empty-state">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                if (data.length === 0) {
+                    grid.innerHTML = '<div class="empty-state">No results found.</div>';
+                    return;
+                }
+
+                renderImages(data);
+            } catch (error) {
+                console.error('Error:', error);
+                grid.innerHTML = '<div class="empty-state">Failed to load images.</div>';
+            }
+        }
+
+        function renderImages(images) {
+            grid.innerHTML = '';
+
+            images.forEach(img => {
+                // Ensure we have an image URL
+                const imgUrl = img.image || img.contentUrl || img.thumbnail;
+                if (!imgUrl) return;
+
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                // Use title if available, else generic
+                const title = img.title || "Pinterest Image";
+
+                card.innerHTML = `
+                    <img src="${imgUrl}" alt="${title}" loading="lazy" onclick="viewImage('${imgUrl}')">
+                    <div class="card-footer">
+                        <div class="card-title">${title}</div>
+                        <a href="${imgUrl}" target="_blank" class="download-btn" download>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Save
+                        </a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function viewImage(url) {
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
