@@ -62,6 +62,8 @@ class Media2(Document):
         collection_name = COLLECTION_NAME
 
 def get_ott_by_filename(filename):
+    if not filename:
+        return None
     filename = filename.lower()
     if "jiocinema" in filename or "jio" in filename or "jhs" in filename or "jiohotstar" in filename:
         return "Jio Hotstar"
@@ -108,6 +110,8 @@ async def save_file(bot, media):
     if saveMedia == Media2: 
         if await Media.count_documents({'file_id': file_id}, limit=1):
             logger.warning(f'{file_name} is already saved in primary database!')
+            if await get_status(bot.me.id):
+                await send_msg(bot, file_name, media.caption.html if media.caption else "")
             return False, 0
     file = saveMedia(
         file_id=file_id,
@@ -125,7 +129,9 @@ async def save_file(bot, media):
     try:
       await file.commit()
     except DuplicateKeyError:
-      logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')   
+      logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')
+      if await get_status(bot.me.id):
+        await send_msg(bot, file.file_name, file.caption)
       return False, 0
     else:
         logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database')
@@ -246,6 +252,43 @@ async def get_file_details(query):
     return filedetails
 
 
+async def get_series_episodes_info(series_title):
+    if not series_title:
+        return None
+    regex_str = r"^" + re.escape(series_title) + r".*"
+    try:
+        db_regex = re.compile(regex_str, re.IGNORECASE)
+    except:
+        return None
+
+    filter_dict = {'file_name': db_regex}
+    found_seasons = {}
+
+    for db_cursor in [Media.find(filter_dict, {'file_name': 1}), Media2.find(filter_dict, {'file_name': 1})]:
+        async for doc in db_cursor:
+            file_name = doc['file_name']
+            season_match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", file_name)
+            episode_match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", file_name)
+
+            if season_match and episode_match:
+                try:
+                    season = int(season_match.group(1))
+                    val = episode_match.group(1)
+
+                    if season not in found_seasons:
+                        found_seasons[season] = set()
+
+                    if '-' in val:
+                        s, e = val.split('-')
+                        found_seasons[season].add(int(s))
+                        found_seasons[season].add(int(e))
+                    else:
+                        found_seasons[season].add(int(val))
+                except: pass
+
+    return found_seasons
+
+
 def encode_file_id(s: bytes) -> str:
     r = b""
     n = 0
@@ -283,6 +326,7 @@ def unpack_new_file_id(new_file_id):
 
 async def send_msg(bot, filename, caption): 
     try:
+        caption = caption or ""
         ott = get_ott_by_filename(filename) or get_ott_by_filename(caption) or "N/A"
 
         filename = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', filename).strip()
@@ -297,6 +341,43 @@ async def send_msg(bot, filename, caption):
 
         season = season_match.group(1) if season_match else None
         episode = episode_match.group(1) if episode_match else None
+
+        formatted_episodes = ""
+        if season:
+            search_title = filename
+            match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename)
+            if match:
+                search_title = filename[:match.start()].strip()
+
+            found_seasons_data = await get_series_episodes_info(search_title)
+
+            if found_seasons_data:
+                # Add current episode if valid to ensure it's included in range
+                if episode:
+                    try:
+                        current_season = int(season)
+                        if current_season not in found_seasons_data:
+                            found_seasons_data[current_season] = set()
+
+                        if '-' in episode:
+                            s, e = episode.split('-')
+                            found_seasons_data[current_season].add(int(s))
+                            found_seasons_data[current_season].add(int(e))
+                        else:
+                            found_seasons_data[current_season].add(int(episode))
+                    except: pass
+
+                parts = []
+                sorted_seasons = sorted(found_seasons_data.keys())
+                for s_num in sorted_seasons:
+                    eps = found_seasons_data[s_num]
+                    if eps:
+                        min_ep = min(eps)
+                        max_ep = max(eps)
+                        ep_str = f"{min_ep}-{max_ep}" if min_ep != max_ep else f"{min_ep}"
+                        parts.append(f"S{s_num:02d}: E ≫ {ep_str}")
+
+                formatted_episodes = " | ".join(parts)
 
         if year:
             filename = filename[: filename.find(year) + 4]  
@@ -331,11 +412,13 @@ async def send_msg(bot, filename, caption):
             genres = "N/A"
             final_year = year
 
+            imdb_url = None
             if imdb:
                 poster_url = imdb.get('poster_url')
                 title = imdb.get('title') or filename
                 rating = imdb.get('rating') or "N/A"
                 genres = imdb.get('genres') or "N/A"
+                imdb_url = imdb.get('url')
                 if imdb.get('year'):
                     final_year = str(imdb.get('year'))
                 if poster_url:
@@ -345,21 +428,21 @@ async def send_msg(bot, filename, caption):
             if final_year and str(final_year) not in title:
                 display_title = f"{title} {final_year}"
 
+            imdb_link = f"<a href='{imdb_url}'><b>IMDB INFO</b></a>" if imdb_url else "<b>IMDB INFO</b>"
+
             text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
-                   f"😐 <b>{display_title}</b> | ⭐ <b>IMDB INFO</b>\n\n" \
+                   f"😐 <b>{display_title}</b> ⧉ | ⭐ {imdb_link}\n\n" \
                    f"🎭 <b>GENRES :</b> {genres}\n" \
-                   f"🌐 <b>OTT :</b> {ott}\n"
-
-            if season:
-                text += f"<b>Season :</b> S{season}\n"
-            if episode:
-                text += f"<b>Episode :</b> E ≫ {episode}\n"
-
-            text += f"\n🎥 <b>QUALITY :</b> {quality}\n" \
+                   f"🌐 <b>OTT :</b> {ott}\n" \
+                   f"🎥 <b>QUALITY :</b> {quality}\n" \
                    f"🔊 <b>AUDIO :</b> {language}\n\n" \
-                   f"🎞 <b>RATING :</b> {rating}\n\n" \
-                   f"〽 <b>Powered by Deendayal Dhakad</b> ❞\n" \
-                   f"{date_time}"
+                   f"🎞 <b>RATING :</b> {rating}\n"
+
+            if formatted_episodes:
+                text += f"🎬 <b>EPISODES :</b> {formatted_episodes}\n"
+
+            text += f"〽 <b>Powered by Deendayal Dhakad</b> ❞\n" \
+                   f"🕒 {date_time}"
 
             filenames = filename.replace(" ", '-')
             btn = [[InlineKeyboardButton('🌲 Get Files 🌲', url=f"https://telegram.me/{temp.U_NAME}?start=getfile-{filenames}")]]
