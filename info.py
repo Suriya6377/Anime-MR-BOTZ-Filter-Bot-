@@ -71,7 +71,7 @@ COLLECTION_NAME = environ.get('COLLECTION_NAME', 'Deendayal_files')
 # ============================
 DEENDAYAL_MOVIE_UPDATE_NOTIFICATION = bool(environ.get('DEENDAYAL_MOVIE_UPDATE_NOTIFICATION', True))  # Notification On (True) / Off (False)
 DEENDAYAL_IMAGE_FETCH = bool(environ.get('DEENDAYAL_IMAGE_FETCH', True))  # On (True) / Off (False)
-TMDB_API_KEY = environ.get('TMDB_API_KEY', "") # TMDB API Key for fetching backdrops
+TMDB_API_KEY = environ.get('TMDB_API_KEY', "d190196b912b72c04cc5c7c8948895aa") # TMDB API Key for fetching backdrops
 CAPTION_LANGUAGES = ["Bhojpuri", "Hindi", "Bengali", "Tamil", "English", "Bangla", "Telugu", "Malayalam", "Kannada", "Marathi", "Punjabi", "Bengoli", "Gujrati", "Korean", "Gujarati", "Spanish", "French", "German", "Chinese", "Arabic", "Portuguese", "Russian", "Japanese", "Odia", "Assamese", "Urdu"]
 
 # ============================
