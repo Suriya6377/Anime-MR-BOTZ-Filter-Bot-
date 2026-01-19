@@ -246,6 +246,35 @@ async def get_file_details(query):
     return filedetails
 
 
+async def get_season_episode_range(series_title, season):
+    regex_str = r"^" + re.escape(series_title) + r".*(?:S|Season)\s*0*" + str(season) + r"(?:\D|$).*"
+    try:
+        db_regex = re.compile(regex_str, re.IGNORECASE)
+    except:
+        return None
+
+    filter_dict = {'file_name': db_regex}
+    found_episodes = set()
+
+    for db_cursor in [Media.find(filter_dict, {'file_name': 1}), Media2.find(filter_dict, {'file_name': 1})]:
+        async for doc in db_cursor:
+            match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", doc['file_name'])
+            if match:
+                val = match.group(1)
+                if '-' in val:
+                    try:
+                        s, e = val.split('-')
+                        found_episodes.add(int(s))
+                        found_episodes.add(int(e))
+                    except: pass
+                else:
+                    try:
+                        found_episodes.add(int(val))
+                    except: pass
+
+    return found_episodes
+
+
 def encode_file_id(s: bytes) -> str:
     r = b""
     n = 0
@@ -297,6 +326,35 @@ async def send_msg(bot, filename, caption):
 
         season = season_match.group(1) if season_match else None
         episode = episode_match.group(1) if episode_match else None
+
+        if season:
+            search_title = filename
+            match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename)
+            if match:
+                search_title = filename[:match.start()].strip()
+
+            found_eps = await get_season_episode_range(search_title, season)
+
+            if found_eps:
+                if episode:
+                     if '-' in episode:
+                         try:
+                             s, e = episode.split('-')
+                             found_eps.add(int(s))
+                             found_eps.add(int(e))
+                         except: pass
+                     else:
+                         try:
+                             found_eps.add(int(episode))
+                         except: pass
+
+                if found_eps:
+                    min_ep = min(found_eps)
+                    max_ep = max(found_eps)
+                    if min_ep == 1:
+                        episode = f"1-{max_ep}"
+                    else:
+                        episode = f"{min_ep}-{max_ep}"
 
         if year:
             filename = filename[: filename.find(year) + 4]  
