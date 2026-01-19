@@ -441,7 +441,7 @@ async def send_msg(bot, filename, caption):
             if formatted_episodes:
                 text += f"🎬 <b>ᴇᴘɪsᴏᴅᴇs :</b> {formatted_episodes}\n"
 
-            text += f" <blockquote><b>〽️ Powered by <a href="https://t.me/Nobita_Files_Filter_bot">Deendayal Dhakad</a></b></blockquote> \n" \
+            text += f" <blockquote><b>〽️ Powered by <a href='https://t.me/Nobita_Files_Filter_bot'>Deendayal Dhakad</a></b></blockquote> \n" \
                    f"🕒 {date_time}"
 
             filenames = filename.replace(" ", '-')
