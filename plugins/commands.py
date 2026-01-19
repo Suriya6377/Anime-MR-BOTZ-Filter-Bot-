@@ -56,7 +56,6 @@ async def start(client, message):
                 ],[
                     InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
-                    InlineKeyboardButton('Feature', callback_data="topsearch"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
                 ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
@@ -90,7 +89,6 @@ async def start(client, message):
                 ],[
                     InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
-                    InlineKeyboardButton('Feature', callback_data="topsearch"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
                 ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
@@ -1343,136 +1341,6 @@ async def removetutorial(bot, message):
     await reply.edit_text(f"<b>ꜱᴜᴄᴄᴇꜱꜱꜰᴜʟʟʏ ʀᴇᴍᴏᴠᴇᴅ ᴛᴜᴛᴏʀɪᴀʟ ʟɪɴᴋ ✅</b>")
     
 
-@Client.on_callback_query(filters.regex("topsearch"))
-async def features_callback(client, callback_query):
-    buttons = [
-        [InlineKeyboardButton('Telegraph ⚡', callback_data='telegraph_info'),
-         InlineKeyboardButton('Font 🎨', callback_data='font_info')],
-        [InlineKeyboardButton('Top Trending 📈', callback_data='show_top_search')],
-        [InlineKeyboardButton('🔙 Back', callback_data='start_data')]
-    ]
-    reply_markup = InlineKeyboardMarkup(buttons)
-    if callback_query.message.photo:
-        await callback_query.message.edit_caption(caption="<b>Choose a Feature 👇</b>", reply_markup=reply_markup)
-    else:
-        await callback_query.message.edit_text(text="<b>Choose a Feature 👇</b>", reply_markup=reply_markup)
-    await callback_query.answer()
-
-@Client.on_callback_query(filters.regex("^start_data$"))
-async def start_callback(client, callback_query):
-    buttons = [[
-                InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
-            ],[
-                InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
-            ],[
-                InlineKeyboardButton('Feature', callback_data="topsearch"),
-                InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
-            ],[
-                InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
-                InlineKeyboardButton('ᴇᴀʀɴ ᴍᴏɴᴇʏ..💵', callback_data="shortlink_info")
-            ]]
-    reply_markup = InlineKeyboardMarkup(buttons)
-    current_time = datetime.now(pytz.timezone(TIMEZONE))
-    curr_time = current_time.hour
-    if curr_time < 12:
-        gtxt = "ɢᴏᴏᴅ ᴍᴏʀɴɪɴɢ 🌞"
-    elif curr_time < 17:
-        gtxt = "ɢᴏᴏᴅ ᴀғᴛᴇʀɴᴏᴏɴ 🌓"
-    elif curr_time < 21:
-        gtxt = "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ 🌘"
-    else:
-        gtxt = "ɢᴏᴏᴅ ɴɪɢʜᴛ 🌑"
-
-    if callback_query.message.photo:
-         await callback_query.message.edit_caption(
-            caption=script.START_TXT.format(callback_query.from_user.mention, gtxt, temp.U_NAME, temp.B_NAME),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    else:
-        await callback_query.message.edit_text(
-            text=script.START_TXT.format(callback_query.from_user.mention, gtxt, temp.U_NAME, temp.B_NAME),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-    await callback_query.answer()
-
-@Client.on_callback_query(filters.regex("show_top_search"))
-async def show_top_search_callback(client, callback_query):
-    
-    def is_alphanumeric(string):
-        return bool(re.match('^[a-zA-Z0-9 ]*$', string))
-    
-    limit = 20  
-    top_messages = await mdb.get_top_messages(limit)
-    seen_messages = set()
-    truncated_messages = []
-    for msg in top_messages:
-        msg_lower = msg.lower()
-        if msg_lower not in seen_messages and is_alphanumeric(msg):
-            seen_messages.add(msg_lower)
-            
-            if len(msg) > 35:
-                truncated_messages.append(msg[:32] + "...")
-            else:
-                truncated_messages.append(msg)
-    keyboard = [truncated_messages[i:i+2] for i in range(0, len(truncated_messages), 2)]
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard, 
-        one_time_keyboard=True, 
-        resize_keyboard=True, 
-        placeholder="Most searches of the day"
-    )
-    await callback_query.message.reply_text("<b>Tᴏᴘ Sᴇᴀʀᴄʜᴇs Oғ Tʜᴇ Dᴀʏ 👇</b>", reply_markup=reply_markup)
-    await callback_query.answer()
-
-@Client.on_callback_query(filters.regex("telegraph_info"))
-async def telegraph_info_callback(client, callback_query):
-    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='topsearch')]]
-    reply_markup = InlineKeyboardMarkup(buttons)
-    if callback_query.message.photo:
-        await callback_query.message.edit_caption(script.TELE_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
-    else:
-        await callback_query.message.edit_text(script.TELE_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
-    await callback_query.answer()
-
-@Client.on_callback_query(filters.regex("font_info"))
-async def font_info_callback(client, callback_query):
-    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='topsearch')]]
-    reply_markup = InlineKeyboardMarkup(buttons)
-    if callback_query.message.photo:
-        await callback_query.message.edit_caption(script.FONT_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
-    else:
-        await callback_query.message.edit_text(script.FONT_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
-    await callback_query.answer()
-
-@Client.on_message(filters.command('top_search'))
-async def top(_, message):
-    def is_alphanumeric(string):
-        return bool(re.match('^[a-zA-Z0-9 ]*$', string))
-    try:
-        limit = int(message.command[1])
-    except (IndexError, ValueError):
-        limit = 20
-    top_messages = await mdb.get_top_messages(limit)
-    seen_messages = set()
-    truncated_messages = []
-    for msg in top_messages:
-        if msg.lower() not in seen_messages and is_alphanumeric(msg):
-            seen_messages.add(msg.lower())
-            
-            if len(msg) > 35:
-                truncated_messages.append(msg[:35 - 3])
-            else:
-                truncated_messages.append(msg)
-    keyboard = []
-    for i in range(0, len(truncated_messages), 2):
-        row = truncated_messages[i:i+2]
-        keyboard.append(row)
-    reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True, placeholder="Most searches of the day")
-    await message.reply_text(f"<b>Tᴏᴘ Sᴇᴀʀᴄʜᴇs Oғ Tʜᴇ Dᴀʏ 👇</b>", reply_markup=reply_markup)
-
-    
 @Client.on_message(filters.command('trendlist'))
 async def trendlist(client, message):
     def is_alphanumeric(string):
