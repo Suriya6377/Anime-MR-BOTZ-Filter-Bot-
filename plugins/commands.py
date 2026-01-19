@@ -1344,7 +1344,18 @@ async def removetutorial(bot, message):
     
 
 @Client.on_callback_query(filters.regex("topsearch"))
-async def topsearch_callback(client, callback_query):
+async def features_callback(client, callback_query):
+    buttons = [
+        [InlineKeyboardButton('Telegraph ⚡', callback_data='telegraph_info'),
+         InlineKeyboardButton('Font 🎨', callback_data='font_info')],
+        [InlineKeyboardButton('Top Trending 📈', callback_data='show_top_search')]
+    ]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    await callback_query.message.reply_text("<b>Choose a Feature 👇</b>", reply_markup=reply_markup)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("show_top_search"))
+async def show_top_search_callback(client, callback_query):
     
     def is_alphanumeric(string):
         return bool(re.match('^[a-zA-Z0-9 ]*$', string))
@@ -1370,6 +1381,16 @@ async def topsearch_callback(client, callback_query):
         placeholder="Most searches of the day"
     )
     await callback_query.message.reply_text("<b>Tᴏᴘ Sᴇᴀʀᴄʜᴇs Oғ Tʜᴇ Dᴀʏ 👇</b>", reply_markup=reply_markup)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("telegraph_info"))
+async def telegraph_info_callback(client, callback_query):
+    await callback_query.message.reply_text(script.TELE_TXT, parse_mode=enums.ParseMode.HTML)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("font_info"))
+async def font_info_callback(client, callback_query):
+    await callback_query.message.reply_text(script.FONT_TXT, parse_mode=enums.ParseMode.HTML)
     await callback_query.answer()
 
 @Client.on_message(filters.command('top_search'))
