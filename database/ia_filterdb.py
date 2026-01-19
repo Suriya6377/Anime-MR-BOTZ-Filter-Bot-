@@ -430,18 +430,18 @@ async def send_msg(bot, filename, caption):
 
             imdb_link = f"<a href='{imdb_url}'><b>IMDB INFO</b></a>" if imdb_url else "<b>IMDB INFO</b>"
 
-            text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
+            text = f"📩 <b>NEW FILE ADDED</b> ✅ \n\n" \
                    f"😐 <b>{display_title}</b> ⧉ | ⭐ {imdb_link}\n\n" \
-                   f"🎭 <b>GENRES :</b> {genres}\n" \
-                   f"🌐 <b>OTT :</b> {ott}\n" \
-                   f"🎥 <b>QUALITY :</b> {quality}\n" \
-                   f"🔊 <b>AUDIO :</b> {language}\n\n" \
-                   f"🎞 <b>RATING :</b> {rating}\n"
+                   f"🎭 <b>ɢᴇɴʀᴇs :</b> {genres}\n" \
+                   f"🌐 <b>ᴏᴛᴛ :</b> {ott}\n" \
+                   f"🎥 <b>ǫᴜᴀʟɪᴛʏ :</b> {quality}\n" \
+                   f"🔊 <b>ᴀᴜᴅɪᴏ :</b> {language}\n\n" \
+                   f"🎞 <b>ʀᴀᴛɪɴɢ :</b> {rating}\n"
 
             if formatted_episodes:
-                text += f"🎬 <b>EPISODES :</b> {formatted_episodes}\n"
+                text += f"🎬 <b>ᴇᴘɪsᴏᴅᴇs :</b> {formatted_episodes}\n"
 
-            text += f"〽 <b>Powered by Deendayal Dhakad</b> ❞\n" \
+            text += f"〽 <b>Powered by Deendayal Dhakad</b> \n" \
                    f"🕒 {date_time}"
 
             filenames = filename.replace(" ", '-')
