@@ -283,10 +283,10 @@ def unpack_new_file_id(new_file_id):
 
 async def send_msg(bot, filename, caption): 
     try:
+        ott = get_ott_by_filename(filename) or get_ott_by_filename(caption) or "N/A"
+
         filename = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', filename).strip()
         caption = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', caption).strip()
-
-        ott = get_ott_by_filename(filename) or get_ott_by_filename(caption) or "N/A"
         
         year_match = re.search(r"\b(19|20)\d{2}\b", caption)
         year = year_match.group(0) if year_match else None
