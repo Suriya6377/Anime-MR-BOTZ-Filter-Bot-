@@ -12,6 +12,8 @@ from utils import get_settings, save_group_settings, temp, get_status
 from database.users_chats_db import add_name
 from .Imdbposter import get_movie_details, fetch_image
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from datetime import datetime
+import pytz
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -58,6 +60,34 @@ class Media2(Document):
     class Meta:
         indexes = ('$file_name', )
         collection_name = COLLECTION_NAME
+
+def get_ott_by_filename(filename):
+    filename = filename.lower()
+    if "jiocinema" in filename or "jio" in filename or "jhs" in filename or "jiohotstar" in filename:
+        return "Jio Hotstar"
+    elif "amzn" in filename or "amazon" in filename:
+        return "Amazon Prime Video"
+    elif "nf" in filename or "netflix" in filename:
+        return "Netflix"
+    elif "dsnp" in filename or "disney" in filename or "hotstar" in filename:
+        return "Disney+ Hotstar"
+    elif "zee5" in filename:
+        return "Zee5"
+    elif "sonyliv" in filename or "sl" in filename:
+        return "SonyLIV"
+    elif "hbo" in filename:
+        return "HBO Max"
+    elif "apple" in filename or "atvp" in filename:
+        return "Apple TV+"
+    elif "hulu" in filename:
+        return "Hulu"
+    elif "mubi" in filename:
+        return "Mubi"
+    elif "lionsgate" in filename:
+        return "Lionsgate Play"
+    elif "aha" in filename:
+        return "Aha"
+    return None
 
 async def choose_mediaDB():
     """This Function chooses which database to use based on the value of indexDB key in the dict tempDict."""
@@ -253,20 +283,34 @@ def unpack_new_file_id(new_file_id):
 
 async def send_msg(bot, filename, caption): 
     try:
+        ott = get_ott_by_filename(filename) or get_ott_by_filename(caption) or "N/A"
+
         filename = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', filename).strip()
         caption = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', caption).strip()
         
         year_match = re.search(r"\b(19|20)\d{2}\b", caption)
         year = year_match.group(0) if year_match else None
 
-        pattern = r"(?i)(?:s|season)0*(\d{1,2})"
-        season = re.search(pattern, caption) or re.search(pattern, filename)
-        season = season.group(1) if season else None 
+        # Extract season and episode
+        season_match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename) or re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", caption)
+        episode_match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,2})", filename) or re.search(r"(?i)(?:e|episode)\s*0*(\d{1,2})", caption)
+
+        season = season_match.group(1) if season_match else None
+        episode = episode_match.group(1) if episode_match else None
+
+        season_info = ""
+        if season and episode:
+            season_info = f"S{season} E{episode}"
+        elif season:
+            season_info = f"Season {season}"
 
         if year:
             filename = filename[: filename.find(year) + 4]  
         elif season and season in filename:
-            filename = filename[: filename.find(season) + 1]
+            # If season found, strip everything after season info for cleaner title
+            match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename)
+            if match:
+                filename = filename[:match.start()].strip()
 
         qualities = ["ORG", "org", "hdcam", "HDCAM", "HQ", "hq", "HDRip", "hdrip", "camrip", "CAMRip", "hdtc", "predvd", "DVDscr", "dvdscr", "dvdrip", "dvdscr", "HDTC", "dvdscreen", "HDTS", "hdts"]
         quality = await get_qualities(caption.lower(), qualities) or "HDRip"
@@ -280,17 +324,46 @@ async def send_msg(bot, filename, caption):
 
         filename = re.sub(r"[\(\)\[\]\{\}:;'\-!]", "", filename)
 
-        text = "#𝑵𝒆𝒘_𝑭𝒊𝒍𝒆_𝑨𝒅𝒅𝒆𝒅 ✅\n\n👷𝑵𝒂𝒎𝒆: `{}`\n\n🌳𝑸𝒖𝒂𝒍𝒊𝒕𝒚: {}\n\n🍁𝑨𝒖𝒅𝒊𝒐: {}"
-        text = text.format(filename, quality, language)
+        tz = pytz.timezone('Asia/Kolkata')
+        now = datetime.now(tz)
+        date_time = now.strftime("%d %b %Y | %I:%M:%S %p")
 
         if await add_name(OWNERID, filename):
             imdb = await get_movie_details(filename)  
             resized_poster = None
 
+            title = filename
+            rating = "N/A"
+            genres = "N/A"
+            final_year = year
+
             if imdb:
                 poster_url = imdb.get('poster_url')
+                title = imdb.get('title') or filename
+                rating = imdb.get('rating') or "N/A"
+                genres = imdb.get('genres') or "N/A"
+                if imdb.get('year'):
+                    final_year = str(imdb.get('year'))
                 if poster_url:
                     resized_poster = await fetch_image(poster_url)  
+
+            display_title = title
+            if final_year and str(final_year) not in title:
+                display_title = f"{title} {final_year}"
+
+            text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
+                   f"😐 <b>{display_title}</b> 🯅 | ⭐ <b>IMDB INFO</b>\n\n" \
+                   f"🎭 <b>GENRES :</b> {genres}\n" \
+                   f"🌐 <b>OTT :</b> {ott}\n"
+
+            if season_info:
+                text += f"💿 <b>SEASON :</b> {season_info}\n"
+
+            text += f"\n🎥 <b>QUALITY :</b> {quality}\n" \
+                   f"🔊 <b>AUDIO :</b> {language}\n\n" \
+                   f"🎞 <b>RATING :</b> {rating}\n\n" \
+                   f"〽 <b>Powered by Deendayal Dhakad</b> ❞\n" \
+                   f"{date_time}"
 
             filenames = filename.replace(" ", '-')
             btn = [[InlineKeyboardButton('🌲 Get Files 🌲', url=f"https://telegram.me/{temp.U_NAME}?start=getfile-{filenames}")]]

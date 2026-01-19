@@ -3,7 +3,7 @@ import aiohttp
 import asyncio
 from io import BytesIO
 from PIL import Image
-from info import DEENDAYAL_IMAGE_FETCH
+from info import DEENDAYAL_IMAGE_FETCH, TMDB_API_KEY
 from imdb import Cinemagoer
 
 
@@ -15,7 +15,28 @@ def list_to_str(lst):
         return ", ".join(map(str, lst))
     return ""
 
-async def fetch_image(url, size=(720, 720)):
+async def get_tmdb_backdrop(imdb_id):
+    if not TMDB_API_KEY or not imdb_id:
+        return None
+    try:
+        url = f"https://api.themoviedb.org/3/find/{imdb_id}?api_key={TMDB_API_KEY}&external_source=imdb_id"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    backdrop_path = None
+                    if data.get("movie_results"):
+                        backdrop_path = data["movie_results"][0].get("backdrop_path")
+                    elif data.get("tv_results"):
+                        backdrop_path = data["tv_results"][0].get("backdrop_path")
+
+                    if backdrop_path:
+                        return f"https://image.tmdb.org/t/p/w1280{backdrop_path}"
+    except Exception as e:
+        print(f"TMDB Fetch Error: {e}")
+    return None
+
+async def fetch_image(url, size=None):
     if not DEENDAYAL_IMAGE_FETCH:
         print("Image fetching is disabled.")
         return None
@@ -26,7 +47,12 @@ async def fetch_image(url, size=(720, 720)):
                 if response.status == 200:
                     content = await response.read()
                     img = Image.open(BytesIO(content))
-                    img = img.resize(size, Image.LANCZOS)
+                    if size:
+                        img = img.resize(size, Image.LANCZOS)
+                    elif "tmdb" in url:
+                        img = img.resize((1280, 720), Image.LANCZOS)
+                    else:
+                        img = img.resize((720, 720), Image.LANCZOS)
                     img_byte_arr = BytesIO()
                     img.save(img_byte_arr, format='JPEG')
                     img_byte_arr.seek(0)
@@ -94,6 +120,12 @@ async def get_movie_details(query, id=False, file=None):
             plot = plot[:800] + "..."
 
         poster_url = movie.get('full-size cover url')
+
+        if TMDB_API_KEY:
+            imdb_id_str = f"tt{movie.get('imdbID')}"
+            backdrop_url = await get_tmdb_backdrop(imdb_id_str)
+            if backdrop_url:
+                poster_url = backdrop_url
 
         return {
             'title': movie.get('title'),
