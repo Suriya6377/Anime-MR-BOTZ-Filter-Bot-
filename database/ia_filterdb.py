@@ -351,8 +351,8 @@ async def send_msg(bot, filename, caption):
             if final_year and str(final_year) not in title:
                 display_title = f"{title} {final_year}"
 
-            text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
-                   f"😐 <b>{display_title}</b> 🯅 | ⭐ <b>IMDB INFO</b>\n\n" \
+            text = f"💌 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
+                   f"😐 <b>{display_title}</b> | ⭐ <b>IMDB INFO</b>\n\n" \
                    f"🎭 <b>GENRES :</b> {genres}\n" \
                    f"🌐 <b>OTT :</b> {ott}\n"
 
