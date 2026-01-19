@@ -246,33 +246,39 @@ async def get_file_details(query):
     return filedetails
 
 
-async def get_season_episode_range(series_title, season):
-    regex_str = r"^" + re.escape(series_title) + r".*(?:S|Season)\s*0*" + str(season) + r"(?:\D|$).*"
+async def get_series_episodes_info(series_title):
+    regex_str = r"^" + re.escape(series_title) + r".*"
     try:
         db_regex = re.compile(regex_str, re.IGNORECASE)
     except:
         return None
 
     filter_dict = {'file_name': db_regex}
-    found_episodes = set()
+    found_seasons = {}
 
     for db_cursor in [Media.find(filter_dict, {'file_name': 1}), Media2.find(filter_dict, {'file_name': 1})]:
         async for doc in db_cursor:
-            match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", doc['file_name'])
-            if match:
-                val = match.group(1)
-                if '-' in val:
-                    try:
-                        s, e = val.split('-')
-                        found_episodes.add(int(s))
-                        found_episodes.add(int(e))
-                    except: pass
-                else:
-                    try:
-                        found_episodes.add(int(val))
-                    except: pass
+            file_name = doc['file_name']
+            season_match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", file_name)
+            episode_match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", file_name)
 
-    return found_episodes
+            if season_match and episode_match:
+                try:
+                    season = int(season_match.group(1))
+                    val = episode_match.group(1)
+
+                    if season not in found_seasons:
+                        found_seasons[season] = set()
+
+                    if '-' in val:
+                        s, e = val.split('-')
+                        found_seasons[season].add(int(s))
+                        found_seasons[season].add(int(e))
+                    else:
+                        found_seasons[season].add(int(val))
+                except: pass
+
+    return found_seasons
 
 
 def encode_file_id(s: bytes) -> str:
@@ -327,34 +333,42 @@ async def send_msg(bot, filename, caption):
         season = season_match.group(1) if season_match else None
         episode = episode_match.group(1) if episode_match else None
 
+        formatted_episodes = ""
         if season:
             search_title = filename
             match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename)
             if match:
                 search_title = filename[:match.start()].strip()
 
-            found_eps = await get_season_episode_range(search_title, season)
+            found_seasons_data = await get_series_episodes_info(search_title)
 
-            if found_eps:
+            if found_seasons_data:
+                # Add current episode if valid to ensure it's included in range
                 if episode:
-                     if '-' in episode:
-                         try:
-                             s, e = episode.split('-')
-                             found_eps.add(int(s))
-                             found_eps.add(int(e))
-                         except: pass
-                     else:
-                         try:
-                             found_eps.add(int(episode))
-                         except: pass
+                    try:
+                        current_season = int(season)
+                        if current_season not in found_seasons_data:
+                            found_seasons_data[current_season] = set()
 
-                if found_eps:
-                    min_ep = min(found_eps)
-                    max_ep = max(found_eps)
-                    if min_ep == 1:
-                        episode = f"1-{max_ep}"
-                    else:
-                        episode = f"{min_ep}-{max_ep}"
+                        if '-' in episode:
+                            s, e = episode.split('-')
+                            found_seasons_data[current_season].add(int(s))
+                            found_seasons_data[current_season].add(int(e))
+                        else:
+                            found_seasons_data[current_season].add(int(episode))
+                    except: pass
+
+                parts = []
+                sorted_seasons = sorted(found_seasons_data.keys())
+                for s_num in sorted_seasons:
+                    eps = found_seasons_data[s_num]
+                    if eps:
+                        min_ep = min(eps)
+                        max_ep = max(eps)
+                        ep_str = f"{min_ep}-{max_ep}" if min_ep != max_ep else f"{min_ep}"
+                        parts.append(f"S{s_num:02d}: E ≫ {ep_str}")
+
+                formatted_episodes = " | ".join(parts)
 
         if year:
             filename = filename[: filename.find(year) + 4]  
@@ -406,18 +420,16 @@ async def send_msg(bot, filename, caption):
             text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
                    f"😐 <b>{display_title}</b> | ⭐ <b>IMDB INFO</b>\n\n" \
                    f"🎭 <b>GENRES :</b> {genres}\n" \
-                   f"🌐 <b>OTT :</b> {ott}\n"
-
-            if season:
-                text += f"<b>Season :</b> S{season}\n"
-            if episode:
-                text += f"<b>Episode :</b> E ≫ {episode}\n"
-
-            text += f"\n🎥 <b>QUALITY :</b> {quality}\n" \
+                   f"🌐 <b>OTT :</b> {ott}\n" \
+                   f"🎥 <b>QUALITY :</b> {quality}\n" \
                    f"🔊 <b>AUDIO :</b> {language}\n\n" \
-                   f"🎞 <b>RATING :</b> {rating}\n\n" \
-                   f"〽 <b>Powered by Deendayal Dhakad</b> ❞\n" \
-                   f"{date_time}"
+                   f"🎞 <b>RATING :</b> {rating}\n"
+
+            if formatted_episodes:
+                text += f"🎬 <b>EPISODES :</b> {formatted_episodes}\n"
+
+            text += f"〽 <b>Powered by Deendayal Dhakad</b> ❞\n" \
+                   f"🕒 {date_time}"
 
             filenames = filename.replace(" ", '-')
             btn = [[InlineKeyboardButton('🌲 Get Files 🌲', url=f"https://telegram.me/{temp.U_NAME}?start=getfile-{filenames}")]]
