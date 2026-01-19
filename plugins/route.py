@@ -44,14 +44,16 @@ async def stream_handler(request: web.Request):
         logging.critical(e.with_traceback(None))
         raise web.HTTPInternalServerError(text=str(e))
 
+try:
+    with open('mini.html', 'r') as f:
+        mini_content = f.read()
+except Exception as e:
+    logging.error(f"Failed to load mini.html: {e}")
+    mini_content = "Error loading mini app."
+
 @routes.get("/mini", allow_head=True)
 async def mini_handler(request):
-    try:
-        with open('mini.html', 'r') as f:
-            content = f.read()
-        return web.Response(text=content, content_type='text/html')
-    except Exception as e:
-        return web.Response(text=str(e), status=500)
+    return web.Response(text=mini_content, content_type='text/html')
 
 @routes.get(r"/{path:\S+}", allow_head=True)
 async def stream_handler(request: web.Request):
