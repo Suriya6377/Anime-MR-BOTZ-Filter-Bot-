@@ -291,14 +291,26 @@ async def send_msg(bot, filename, caption):
         year_match = re.search(r"\b(19|20)\d{2}\b", caption)
         year = year_match.group(0) if year_match else None
 
-        pattern = r"(?i)(?:s|season)0*(\d{1,2})"
-        season = re.search(pattern, caption) or re.search(pattern, filename)
-        season = season.group(1) if season else None 
+        # Extract season and episode
+        season_match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename) or re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", caption)
+        episode_match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,2})", filename) or re.search(r"(?i)(?:e|episode)\s*0*(\d{1,2})", caption)
+
+        season = season_match.group(1) if season_match else None
+        episode = episode_match.group(1) if episode_match else None
+
+        season_info = ""
+        if season and episode:
+            season_info = f"S{season} E{episode}"
+        elif season:
+            season_info = f"Season {season}"
 
         if year:
             filename = filename[: filename.find(year) + 4]  
         elif season and season in filename:
-            filename = filename[: filename.find(season) + 1]
+            # If season found, strip everything after season info for cleaner title
+            match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename)
+            if match:
+                filename = filename[:match.start()].strip()
 
         qualities = ["ORG", "org", "hdcam", "HDCAM", "HQ", "hq", "HDRip", "hdrip", "camrip", "CAMRip", "hdtc", "predvd", "DVDscr", "dvdscr", "dvdrip", "dvdscr", "HDTC", "dvdscreen", "HDTS", "hdts"]
         quality = await get_qualities(caption.lower(), qualities) or "HDRip"
@@ -342,8 +354,12 @@ async def send_msg(bot, filename, caption):
             text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
                    f"😐 <b>{display_title}</b> 🯅 | ⭐ <b>IMDB INFO</b>\n\n" \
                    f"🎭 <b>GENRES :</b> {genres}\n" \
-                   f"🌐 <b>OTT :</b> {ott}\n\n" \
-                   f"🎥 <b>QUALITY :</b> {quality}\n" \
+                   f"🌐 <b>OTT :</b> {ott}\n"
+
+            if season_info:
+                text += f"💿 <b>SEASON :</b> {season_info}\n"
+
+            text += f"\n🎥 <b>QUALITY :</b> {quality}\n" \
                    f"🔊 <b>AUDIO :</b> {language}\n\n" \
                    f"🎞 <b>RATING :</b> {rating}\n\n" \
                    f"〽 <b>Powered by Deendayal Dhakad</b> ❞\n" \
