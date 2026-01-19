@@ -56,6 +56,7 @@ async def start(client, message):
                 ],[
                     InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
+                    InlineKeyboardButton('Feature', callback_data="features"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
                 ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
@@ -89,6 +90,7 @@ async def start(client, message):
                 ],[
                     InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
+                    InlineKeyboardButton('Feature', callback_data="features"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
                 ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
@@ -1468,3 +1470,37 @@ async def confirmation_handler(client, callback_query):
 
 
 
+
+@Client.on_callback_query(filters.regex("features"))
+async def features_callback(client, callback_query):
+    buttons = [
+        [InlineKeyboardButton('Telegraph ⚡', callback_data='telegraph_info'),
+         InlineKeyboardButton('Font 🎨', callback_data='font_info')],
+        [InlineKeyboardButton('🔙 Back', callback_data='start')]
+    ]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    if callback_query.message.photo:
+        await callback_query.message.edit_caption(caption="<b>Choose a Feature 👇</b>", reply_markup=reply_markup)
+    else:
+        await callback_query.message.edit_text(text="<b>Choose a Feature 👇</b>", reply_markup=reply_markup)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("telegraph_info"))
+async def telegraph_info_callback(client, callback_query):
+    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='features')]]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    if callback_query.message.photo:
+        await callback_query.message.edit_caption(script.TELE_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    else:
+        await callback_query.message.edit_text(script.TELE_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("font_info"))
+async def font_info_callback(client, callback_query):
+    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='features')]]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    if callback_query.message.photo:
+        await callback_query.message.edit_caption(script.FONT_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    else:
+        await callback_query.message.edit_text(script.FONT_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    await callback_query.answer()
