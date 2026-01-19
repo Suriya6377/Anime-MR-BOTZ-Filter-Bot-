@@ -18,7 +18,7 @@ from pyrogram.errors import FloodWait
 from pyrogram.types import *
 from database.ia_filterdb import Media, Media2, get_file_details, unpack_new_file_id, get_bad_files
 from database.users_chats_db import db, delete_all_msg
-from info import CHANNELS, FSUB_PICS, ADMINS, LOG_CHANNEL, PICS, BATCH_FILE_CAPTION, CUSTOM_FILE_CAPTION, PROTECT_CONTENT, CHNL_LNK, REQST_CHANNEL, GRP_LNK, SUPPORT_CHAT_ID, MAX_B_TN, VERIFY, REACTIONS, HOW_TO_VERIFY, PICS, DEENDAYAL_VERIFIED_LOG, SUBSCRIPTION, DEENDAYAL_VERIFY_EXPIRE, DEENDAYAL_MOVIE_UPDATE_CHANNEL_LNK, STREAM_MODE, EMOJI_MODE, OWNER_LNK, OWNER_UPI_ID, QR_CODE, DELETE_TIME
+from info import CHANNELS, FSUB_PICS, ADMINS, LOG_CHANNEL, PICS, BATCH_FILE_CAPTION, CUSTOM_FILE_CAPTION, PROTECT_CONTENT, CHNL_LNK, REQST_CHANNEL, GRP_LNK, SUPPORT_CHAT_ID, MAX_B_TN, VERIFY, REACTIONS, HOW_TO_VERIFY, PICS, DEENDAYAL_VERIFIED_LOG, SUBSCRIPTION, DEENDAYAL_VERIFY_EXPIRE, DEENDAYAL_MOVIE_UPDATE_CHANNEL_LNK, STREAM_MODE, EMOJI_MODE, OWNER_LNK, OWNER_UPI_ID, QR_CODE, DELETE_TIME, URL
 from utils import get_settings, get_size, is_subscribed,  save_group_settings, temp, verify_user, check_token, check_verification, get_token, get_shortlink, get_tutorial, get_time
 from database.connections_mdb import active_connection
 
@@ -54,7 +54,9 @@ async def start(client, message):
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
                 ],[
-                    InlineKeyboardButton('ᴛᴏᴘ sᴇᴀʀᴄʜɪɴɢ ⭐', callback_data="topsearch"),
+                    InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
+                ],[
+                    InlineKeyboardButton('Feature', callback_data="topsearch"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
                 ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
@@ -86,7 +88,9 @@ async def start(client, message):
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
                 ],[
-                    InlineKeyboardButton('ᴛᴏᴘ sᴇᴀʀᴄʜɪɴɢ ⭐', callback_data="topsearch"),
+                    InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
+                ],[
+                    InlineKeyboardButton('Feature', callback_data="topsearch"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
                 ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
@@ -1340,7 +1344,18 @@ async def removetutorial(bot, message):
     
 
 @Client.on_callback_query(filters.regex("topsearch"))
-async def topsearch_callback(client, callback_query):
+async def features_callback(client, callback_query):
+    buttons = [
+        [InlineKeyboardButton('Telegraph ⚡', callback_data='telegraph_info'),
+         InlineKeyboardButton('Font 🎨', callback_data='font_info')],
+        [InlineKeyboardButton('Top Trending 📈', callback_data='show_top_search')]
+    ]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    await callback_query.message.reply_text("<b>Choose a Feature 👇</b>", reply_markup=reply_markup)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("show_top_search"))
+async def show_top_search_callback(client, callback_query):
     
     def is_alphanumeric(string):
         return bool(re.match('^[a-zA-Z0-9 ]*$', string))
@@ -1366,6 +1381,16 @@ async def topsearch_callback(client, callback_query):
         placeholder="Most searches of the day"
     )
     await callback_query.message.reply_text("<b>Tᴏᴘ Sᴇᴀʀᴄʜᴇs Oғ Tʜᴇ Dᴀʏ 👇</b>", reply_markup=reply_markup)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("telegraph_info"))
+async def telegraph_info_callback(client, callback_query):
+    await callback_query.message.reply_text(script.TELE_TXT, parse_mode=enums.ParseMode.HTML)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("font_info"))
+async def font_info_callback(client, callback_query):
+    await callback_query.message.reply_text(script.FONT_TXT, parse_mode=enums.ParseMode.HTML)
     await callback_query.answer()
 
 @Client.on_message(filters.command('top_search'))
