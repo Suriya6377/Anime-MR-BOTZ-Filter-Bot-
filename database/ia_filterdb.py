@@ -125,7 +125,9 @@ async def save_file(bot, media):
     try:
       await file.commit()
     except DuplicateKeyError:
-      logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')   
+      logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')
+      if await get_status(bot.me.id):
+        await send_msg(bot, file.file_name, file.caption)
       return False, 0
     else:
         logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database')
