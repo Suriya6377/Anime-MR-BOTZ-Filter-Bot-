@@ -1683,7 +1683,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 ],[
                     InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
-                    InlineKeyboardButton('ᴛᴏᴘ sᴇᴀʀᴄʜɪɴɢ ⭐', callback_data="topsearch"),
+                    InlineKeyboardButton('Feature', callback_data="topsearch"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
                 ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
