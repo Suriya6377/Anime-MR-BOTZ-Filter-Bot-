@@ -430,7 +430,7 @@ async def send_msg(bot, filename, caption):
 
             imdb_link = f"<a href='{imdb_url}'><b>IMDB INFO</b></a>" if imdb_url else "<b>IMDB INFO</b>"
 
-            text = f"📩 <b>NEW FILE ADDED</b> ✅ \n\n" \
+            text = f" <blockquote><b>📥NEW FILE ADDED✅</b></blockquote> \n\n" \
                    f"😐 <b>{display_title}</b> ⧉ | ⭐ {imdb_link}\n\n" \
                    f"🎭 <b>ɢᴇɴʀᴇs :</b> {genres}\n" \
                    f"🌐 <b>ᴏᴛᴛ :</b> {ott}\n" \
@@ -441,7 +441,7 @@ async def send_msg(bot, filename, caption):
             if formatted_episodes:
                 text += f"🎬 <b>ᴇᴘɪsᴏᴅᴇs :</b> {formatted_episodes}\n"
 
-            text += f"〽 <b>Powered by Deendayal Dhakad</b> \n" \
+            text += f" <blockquote><b>〽️ Powered by <a href="https://t.me/Nobita_Files_Filter_bot">Deendayal Dhakad</a></b></blockquote> \n" \
                    f"🕒 {date_time}"
 
             filenames = filename.replace(" ", '-')
