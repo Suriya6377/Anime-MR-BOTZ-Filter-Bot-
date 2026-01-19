@@ -293,16 +293,10 @@ async def send_msg(bot, filename, caption):
 
         # Extract season and episode
         season_match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename) or re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", caption)
-        episode_match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,2})", filename) or re.search(r"(?i)(?:e|episode)\s*0*(\d{1,2})", caption)
+        episode_match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", filename) or re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", caption)
 
         season = season_match.group(1) if season_match else None
         episode = episode_match.group(1) if episode_match else None
-
-        season_info = ""
-        if season and episode:
-            season_info = f"S{season} E{episode}"
-        elif season:
-            season_info = f"Season {season}"
 
         if year:
             filename = filename[: filename.find(year) + 4]  
@@ -352,12 +346,14 @@ async def send_msg(bot, filename, caption):
                 display_title = f"{title} {final_year}"
 
             text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
-                   f"😐 <b>{display_title}</b> 🯅 | ⭐ <b>IMDB INFO</b>\n\n" \
+                   f"😐 <b>{display_title}</b> | ⭐ <b>IMDB INFO</b>\n\n" \
                    f"🎭 <b>GENRES :</b> {genres}\n" \
                    f"🌐 <b>OTT :</b> {ott}\n"
 
-            if season_info:
-                text += f"💿 <b>SEASON :</b> {season_info}\n"
+            if season:
+                text += f"<b>Season :</b> S{season}\n"
+            if episode:
+                text += f"<b>Episode :</b> E ≫ {episode}\n"
 
             text += f"\n🎥 <b>QUALITY :</b> {quality}\n" \
                    f"🔊 <b>AUDIO :</b> {language}\n\n" \
