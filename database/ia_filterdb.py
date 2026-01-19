@@ -247,6 +247,8 @@ async def get_file_details(query):
 
 
 async def get_series_episodes_info(series_title):
+    if not series_title:
+        return None
     regex_str = r"^" + re.escape(series_title) + r".*"
     try:
         db_regex = re.compile(regex_str, re.IGNORECASE)
@@ -403,11 +405,13 @@ async def send_msg(bot, filename, caption):
             genres = "N/A"
             final_year = year
 
+            imdb_url = None
             if imdb:
                 poster_url = imdb.get('poster_url')
                 title = imdb.get('title') or filename
                 rating = imdb.get('rating') or "N/A"
                 genres = imdb.get('genres') or "N/A"
+                imdb_url = imdb.get('url')
                 if imdb.get('year'):
                     final_year = str(imdb.get('year'))
                 if poster_url:
@@ -417,8 +421,10 @@ async def send_msg(bot, filename, caption):
             if final_year and str(final_year) not in title:
                 display_title = f"{title} {final_year}"
 
+            imdb_link = f"<a href='{imdb_url}'><b>IMDB INFO</b></a>" if imdb_url else "<b>IMDB INFO</b>"
+
             text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
-                   f"😐 <b>{display_title}</b> | ⭐ <b>IMDB INFO</b>\n\n" \
+                   f"😐 <b>{display_title}</b> ⧉ | ⭐ {imdb_link}\n\n" \
                    f"🎭 <b>GENRES :</b> {genres}\n" \
                    f"🌐 <b>OTT :</b> {ott}\n" \
                    f"🎥 <b>QUALITY :</b> {quality}\n" \
