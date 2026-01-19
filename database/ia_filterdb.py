@@ -12,6 +12,8 @@ from utils import get_settings, save_group_settings, temp, get_status
 from database.users_chats_db import add_name
 from .Imdbposter import get_movie_details, fetch_image
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from datetime import datetime
+import pytz
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -58,6 +60,34 @@ class Media2(Document):
     class Meta:
         indexes = ('$file_name', )
         collection_name = COLLECTION_NAME
+
+def get_ott_by_filename(filename):
+    filename = filename.lower()
+    if "amzn" in filename or "amazon" in filename:
+        return "Amazon Prime Video"
+    elif "nf" in filename or "netflix" in filename:
+        return "Netflix"
+    elif "dsnp" in filename or "disney" in filename or "hotstar" in filename:
+        return "Disney+ Hotstar"
+    elif "zee5" in filename:
+        return "Zee5"
+    elif "sonyliv" in filename or "sl" in filename:
+        return "SonyLIV"
+    elif "jiocinema" in filename or "jio" in filename:
+        return "JioCinema"
+    elif "hbo" in filename:
+        return "HBO Max"
+    elif "apple" in filename or "atvp" in filename:
+        return "Apple TV+"
+    elif "hulu" in filename:
+        return "Hulu"
+    elif "mubi" in filename:
+        return "Mubi"
+    elif "lionsgate" in filename:
+        return "Lionsgate Play"
+    elif "aha" in filename:
+        return "Aha"
+    return None
 
 async def choose_mediaDB():
     """This Function chooses which database to use based on the value of indexDB key in the dict tempDict."""
@@ -255,6 +285,8 @@ async def send_msg(bot, filename, caption):
     try:
         filename = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', filename).strip()
         caption = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', caption).strip()
+
+        ott = get_ott_by_filename(filename) or get_ott_by_filename(caption) or "N/A"
         
         year_match = re.search(r"\b(19|20)\d{2}\b", caption)
         year = year_match.group(0) if year_match else None
@@ -280,17 +312,42 @@ async def send_msg(bot, filename, caption):
 
         filename = re.sub(r"[\(\)\[\]\{\}:;'\-!]", "", filename)
 
-        text = "#𝑵𝒆𝒘_𝑭𝒊𝒍𝒆_𝑨𝒅𝒅𝒆𝒅 ✅\n\n👷𝑵𝒂𝒎𝒆: `{}`\n\n🌳𝑸𝒖𝒂𝒍𝒊𝒕𝒚: {}\n\n🍁𝑨𝒖𝒅𝒊𝒐: {}"
-        text = text.format(filename, quality, language)
+        tz = pytz.timezone('Asia/Kolkata')
+        now = datetime.now(tz)
+        date_time = now.strftime("%d %b %Y | %I:%M:%S %p")
 
         if await add_name(OWNERID, filename):
             imdb = await get_movie_details(filename)  
             resized_poster = None
 
+            title = filename
+            rating = "N/A"
+            genres = "N/A"
+            final_year = year
+
             if imdb:
                 poster_url = imdb.get('poster_url')
+                title = imdb.get('title') or filename
+                rating = imdb.get('rating') or "N/A"
+                genres = imdb.get('genres') or "N/A"
+                if imdb.get('year'):
+                    final_year = str(imdb.get('year'))
                 if poster_url:
                     resized_poster = await fetch_image(poster_url)  
+
+            display_title = title
+            if final_year and str(final_year) not in title:
+                display_title = f"{title} {final_year}"
+
+            text = f"📩 <b>NEW FILE ADDED</b> ✅ ❞\n\n" \
+                   f"😐 <b>{display_title}</b> 🯅 | ⭐ <b>IMDB INFO</b>\n\n" \
+                   f"🎭 <b>GENRES :</b> {genres}\n" \
+                   f"🌐 <b>OTT :</b> {ott}\n\n" \
+                   f"🎥 <b>QUALITY :</b> {quality}\n" \
+                   f"🔊 <b>AUDIO :</b> {language}\n\n" \
+                   f"🎞 <b>RATING :</b> {rating}\n\n" \
+                   f"〽 <b>Powered by Deendayal Dhakad</b> ❞\n" \
+                   f"{date_time}"
 
             filenames = filename.replace(" ", '-')
             btn = [[InlineKeyboardButton('🌲 Get Files 🌲', url=f"https://telegram.me/{temp.U_NAME}?start=getfile-{filenames}")]]
