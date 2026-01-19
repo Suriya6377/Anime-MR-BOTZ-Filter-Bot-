@@ -62,6 +62,8 @@ class Media2(Document):
         collection_name = COLLECTION_NAME
 
 def get_ott_by_filename(filename):
+    if not filename:
+        return None
     filename = filename.lower()
     if "jiocinema" in filename or "jio" in filename or "jhs" in filename or "jiohotstar" in filename:
         return "Jio Hotstar"
@@ -108,6 +110,8 @@ async def save_file(bot, media):
     if saveMedia == Media2: 
         if await Media.count_documents({'file_id': file_id}, limit=1):
             logger.warning(f'{file_name} is already saved in primary database!')
+            if await get_status(bot.me.id):
+                await send_msg(bot, file_name, media.caption.html if media.caption else "")
             return False, 0
     file = saveMedia(
         file_id=file_id,
@@ -322,6 +326,7 @@ def unpack_new_file_id(new_file_id):
 
 async def send_msg(bot, filename, caption): 
     try:
+        caption = caption or ""
         ott = get_ott_by_filename(filename) or get_ott_by_filename(caption) or "N/A"
 
         filename = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', filename).strip()
