@@ -28,7 +28,7 @@ BOT_TOKEN = environ.get('BOT_TOKEN', "")
 CACHE_TIME = int(environ.get('CACHE_TIME', 300))
 USE_CAPTION_FILTER = is_enabled((environ.get('USE_CAPTION_FILTER', 'True')), True)
 
-PICS = (environ.get('PICS', 'https://graph.org/file/56b5deb73f3b132e2bb73.jpg https://graph.org/file/5303692652d91d52180c2.jpg https://graph.org/file/425b6f46efc7c6d64105f.jpg https://graph.org/file/876867e761c6c7a29855b.jpg')).split()  # Sample pic
+PICS = (environ.get('PICS', 'https://i.ibb.co/ccWd1db5/photo-2026-01-04-09-51-53-7591442205638656024.jpg https://i.ibb.co/38fQNmF/photo-2026-01-04-09-52-40-7591442536351137808.jpg https://i.ibb.co/TBLBcL8j/photo-2026-01-04-09-52-16-7591442102559440916.jpg https://i.ibb.co/1J0BK84k/photo-2026-01-04-09-52-26-7591442712444796944.jpg')).split()  # Sample pic
 NOR_IMG = environ.get("NOR_IMG", "https://graph.org/file/e20b5fdaf217252964202.jpg")
 MELCOW_VID = environ.get("MELCOW_VID", "https://graph.org/file/60e8a622b14796e4448ce.mp4")
 SPELL_IMG = environ.get("SPELL_IMG", "https://graph.org/file/13702ae26fb05df52667c.jpg")
@@ -54,8 +54,8 @@ MULTI_FSUB = [int(channel_id) for channel_id in environ.get('MULTI_FSUB', '-1002
 # ============================
 # Payment Configuration
 # ============================
-QR_CODE = environ.get('QR_CODE', 'https://graph.org/file/e419f801841c2ee3db0fc.jpg')
-OWNER_UPI_ID = environ.get('OWNER_UPI_ID', 'deendayaldhaked@ybl')
+QR_CODE = environ.get('QR_CODE', 'https://graph.org/')
+OWNER_UPI_ID = environ.get('OWNER_UPI_ID', 'deendayalsurajk@axl')
 
 # ============================
 # MongoDB Configuration
@@ -73,7 +73,7 @@ CAPTION_LANGUAGES = ["Bhojpuri", "Hindi", "Bengali", "Tamil", "English", "Bangla
 VERIFY = bool(environ.get('VERIFY', True))  # Verification On (True) / Off (False)
 DEENDAYAL_VERIFY_EXPIRE = int(environ.get('DEENDAYAL_VERIFY_EXPIRE', 1))  # Add time in hours
 DEENDAYAL_VERIFIED_LOG = int(environ.get('DEENDAYAL_VERIFIED_LOG', '-1002370988072'))  # Log channel id (make sure bot is admin)
-HOW_TO_VERIFY = environ.get('HOW_TO_VERIFY', 'https://t.me/dreamcinezone')  # How to open tutorial link for verification
+HOW_TO_VERIFY = environ.get('HOW_TO_VERIFY', 'https://t.me/Denu_dhakad')  # How to open tutorial link for verification
 
 # ============================
 # Link Shortener Configuration
@@ -81,16 +81,16 @@ HOW_TO_VERIFY = environ.get('HOW_TO_VERIFY', 'https://t.me/dreamcinezone')  # Ho
 IS_SHORTLINK = bool(environ.get('IS_SHORTLINK', False))
 SHORTLINK_URL = environ.get('SHORTLINK_URL', 'shortxlinks.com')
 SHORTLINK_API = environ.get('SHORTLINK_API', 'e094f99e4e843d3b24f51569eeddaae14ebd85ff')
-TUTORIAL = environ.get('TUTORIAL', 'https://t.me/dreamcinezone')  # Tutorial video link for opening shortlink website
+TUTORIAL = environ.get('TUTORIAL', 'https://t.me/Denu_dhakad')  # Tutorial video link for opening shortlink website
 IS_TUTORIAL = bool(environ.get('IS_TUTORIAL', False))
 
 # ============================
 # Channel & Group Links Configuration
 # ============================
-GRP_LNK = environ.get('GRP_LNK', 'https://t.me/dreamcinezone')
-CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/dreamcinezone')
-OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/dreamcinezone')
-OWNERID = int(os.environ.get('OWNERID', '1234567890'))  # Replace with the actual admin ID
+GRP_LNK = environ.get('GRP_LNK', 'https://t.me/Deendayal_Hindi_Movies')
+CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/Deendayal_dhakadd')
+OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/Deendayal_Rolex7')
+OWNERID = int(os.environ.get('OWNERID', '8070498307'))  # Replace with the actual admin ID
 
 # ============================
 # User Configuration
