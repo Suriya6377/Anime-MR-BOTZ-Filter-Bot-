@@ -7,10 +7,9 @@ from pymongo.errors import DuplicateKeyError
 from umongo import Instance, Document, fields
 from motor.motor_asyncio import AsyncIOMotorClient
 from marshmallow.exceptions import ValidationError
-from info import CAPTION_LANGUAGES, DATABASE_URI, DATABASE_URI2, DATABASE_NAME, COLLECTION_NAME, USE_CAPTION_FILTER, MAX_B_TN, DEENDAYAL_MOVIE_UPDATE_CHANNEL, OWNERID
-from utils import get_settings, save_group_settings, temp, get_status
+from info import CAPTION_LANGUAGES, DATABASE_URI, DATABASE_URI2, DATABASE_NAME, COLLECTION_NAME, USE_CAPTION_FILTER, MAX_B_TN, OWNERID
+from utils import get_settings, save_group_settings, temp
 from database.users_chats_db import add_name
-from .Imdbposter import get_movie_details, fetch_image
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import datetime
 import pytz
@@ -61,36 +60,6 @@ class Media2(Document):
         indexes = ('$file_name', )
         collection_name = COLLECTION_NAME
 
-def get_ott_by_filename(filename):
-    if not filename:
-        return None
-    filename = filename.lower()
-    if "jiocinema" in filename or "jio" in filename or "jhs" in filename or "jiohotstar" in filename:
-        return "Jio Hotstar"
-    elif "amzn" in filename or "amazon" in filename:
-        return "Amazon Prime Video"
-    elif "nf" in filename or "netflix" in filename:
-        return "Netflix"
-    elif "dsnp" in filename or "disney" in filename or "hotstar" in filename:
-        return "Disney+ Hotstar"
-    elif "zee5" in filename:
-        return "Zee5"
-    elif "sonyliv" in filename or "sl" in filename:
-        return "SonyLIV"
-    elif "hbo" in filename:
-        return "HBO Max"
-    elif "apple" in filename or "atvp" in filename:
-        return "Apple TV+"
-    elif "hulu" in filename:
-        return "Hulu"
-    elif "mubi" in filename:
-        return "Mubi"
-    elif "lionsgate" in filename:
-        return "Lionsgate Play"
-    elif "aha" in filename:
-        return "Aha"
-    return None
-
 async def choose_mediaDB():
     """This Function chooses which database to use based on the value of indexDB key in the dict tempDict."""
     global saveMedia
@@ -110,8 +79,6 @@ async def save_file(bot, media):
     if saveMedia == Media2: 
         if await Media.count_documents({'file_id': file_id}, limit=1):
             logger.warning(f'{file_name} is already saved in primary database!')
-            if await get_status(bot.me.id):
-                await send_msg(bot, file_name, media.caption.html if media.caption else "")
             return False, 0
     file = saveMedia(
         file_id=file_id,
@@ -130,13 +97,9 @@ async def save_file(bot, media):
       await file.commit()
     except DuplicateKeyError:
       logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')
-      if await get_status(bot.me.id):
-        await send_msg(bot, file.file_name, file.caption)
       return False, 0
     else:
         logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database')
-        if await get_status(bot.me.id):
-            await send_msg(bot, file.file_name, file.caption)
         return True, 1
 
 async def get_search_results(chat_id, query, file_type=None, max_results=10, offset=0, filter=False):
@@ -252,43 +215,6 @@ async def get_file_details(query):
     return filedetails
 
 
-async def get_series_episodes_info(series_title):
-    if not series_title:
-        return None
-    regex_str = r"^" + re.escape(series_title) + r".*"
-    try:
-        db_regex = re.compile(regex_str, re.IGNORECASE)
-    except:
-        return None
-
-    filter_dict = {'file_name': db_regex}
-    found_seasons = {}
-
-    for db_cursor in [Media.find(filter_dict, {'file_name': 1}), Media2.find(filter_dict, {'file_name': 1})]:
-        async for doc in db_cursor:
-            file_name = doc['file_name']
-            season_match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", file_name)
-            episode_match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", file_name)
-
-            if season_match and episode_match:
-                try:
-                    season = int(season_match.group(1))
-                    val = episode_match.group(1)
-
-                    if season not in found_seasons:
-                        found_seasons[season] = set()
-
-                    if '-' in val:
-                        s, e = val.split('-')
-                        found_seasons[season].add(int(s))
-                        found_seasons[season].add(int(e))
-                    else:
-                        found_seasons[season].add(int(val))
-                except: pass
-
-    return found_seasons
-
-
 def encode_file_id(s: bytes) -> str:
     r = b""
     n = 0
@@ -322,147 +248,6 @@ def unpack_new_file_id(new_file_id):
     )
     file_ref = encode_file_ref(decoded.file_reference)
     return file_id, file_ref
-
-
-async def send_msg(bot, filename, caption): 
-    try:
-        caption = caption or ""
-        ott = get_ott_by_filename(filename) or get_ott_by_filename(caption) or "N/A"
-
-        filename = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', filename).strip()
-        caption = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', caption).strip()
-        
-        year_match = re.search(r"\b(19|20)\d{2}\b", caption)
-        year = year_match.group(0) if year_match else None
-
-        # Extract season and episode
-        season_match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename) or re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", caption)
-        episode_match = re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", filename) or re.search(r"(?i)(?:e|episode)\s*0*(\d{1,3}(?:-\d{1,3})?)", caption)
-
-        season = season_match.group(1) if season_match else None
-        episode = episode_match.group(1) if episode_match else None
-
-        formatted_episodes = ""
-        if season:
-            search_title = filename
-            match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename)
-            if match:
-                search_title = filename[:match.start()].strip()
-
-            found_seasons_data = await get_series_episodes_info(search_title)
-
-            if found_seasons_data:
-                # Add current episode if valid to ensure it's included in range
-                if episode:
-                    try:
-                        current_season = int(season)
-                        if current_season not in found_seasons_data:
-                            found_seasons_data[current_season] = set()
-
-                        if '-' in episode:
-                            s, e = episode.split('-')
-                            found_seasons_data[current_season].add(int(s))
-                            found_seasons_data[current_season].add(int(e))
-                        else:
-                            found_seasons_data[current_season].add(int(episode))
-                    except: pass
-
-                parts = []
-                sorted_seasons = sorted(found_seasons_data.keys())
-                for s_num in sorted_seasons:
-                    eps = found_seasons_data[s_num]
-                    if eps:
-                        min_ep = min(eps)
-                        max_ep = max(eps)
-                        ep_str = f"{min_ep}-{max_ep}" if min_ep != max_ep else f"{min_ep}"
-                        parts.append(f"S{s_num:02d}: E ≫ {ep_str}")
-
-                formatted_episodes = " | ".join(parts)
-
-        if year:
-            filename = filename[: filename.find(year) + 4]  
-        elif season and season in filename:
-            # If season found, strip everything after season info for cleaner title
-            match = re.search(r"(?i)(?:s|season)\s*0*(\d{1,2})", filename)
-            if match:
-                filename = filename[:match.start()].strip()
-
-        qualities = ["ORG", "org", "hdcam", "HDCAM", "HQ", "hq", "HDRip", "hdrip", "camrip", "CAMRip", "hdtc", "predvd", "DVDscr", "dvdscr", "dvdrip", "dvdscr", "HDTC", "dvdscreen", "HDTS", "hdts"]
-        quality = await get_qualities(caption.lower(), qualities) or "HDRip"
-
-        language = ""
-        possible_languages = CAPTION_LANGUAGES
-        for lang in possible_languages:
-            if lang.lower() in caption.lower():
-                language += f"{lang}, "
-        language = language[:-2] if language else "Not idea 😄"
-
-        filename = re.sub(r"[\(\)\[\]\{\}:;'\-!]", "", filename)
-
-        tz = pytz.timezone('Asia/Kolkata')
-        now = datetime.now(tz)
-        date_time = now.strftime("%d %b %Y | %I:%M:%S %p")
-
-        if await add_name(OWNERID, filename):
-            imdb = await get_movie_details(filename)  
-            resized_poster = None
-
-            title = filename
-            rating = "N/A"
-            genres = "N/A"
-            final_year = year
-
-            imdb_url = None
-            if imdb:
-                poster_url = imdb.get('poster_url')
-                title = imdb.get('title') or filename
-                rating = imdb.get('rating') or "N/A"
-                genres = imdb.get('genres') or "N/A"
-                imdb_url = imdb.get('url')
-                if imdb.get('year'):
-                    final_year = str(imdb.get('year'))
-                if poster_url:
-                    resized_poster = await fetch_image(poster_url)  
-
-            display_title = title
-            if final_year and str(final_year) not in title:
-                display_title = f"{title} {final_year}"
-
-            imdb_link = f"<a href='{imdb_url}'><b>IMDB INFO</b></a>" if imdb_url else "<b>IMDB INFO</b>"
-
-            text = f" <blockquote><b>📥NEW FILE ADDED✅</b></blockquote> \n\n" \
-                   f"😐 <b>{display_title}</b> ⧉ | ⭐ {imdb_link}\n\n" \
-                   f"🎭 <b>ɢᴇɴʀᴇs :</b> {genres}\n" \
-                   f"🌐 <b>ᴏᴛᴛ :</b> {ott}\n" \
-                   f"🎥 <b>ǫᴜᴀʟɪᴛʏ :</b> {quality}\n" \
-                   f"🔊 <b>ᴀᴜᴅɪᴏ :</b> {language}\n\n" \
-                   f"🎞 <b>ʀᴀᴛɪɴɢ :</b> {rating}\n"
-
-            if formatted_episodes:
-                text += f"🎬 <b>ᴇᴘɪsᴏᴅᴇs :</b> {formatted_episodes}\n"
-
-            text += f" <blockquote><b>〽️ Powered by <a href='https://t.me/Nobita_Files_Filter_bot'>Deendayal Dhakad</a></b></blockquote> \n" \
-                   f"🕒 {date_time}"
-
-            filenames = filename.replace(" ", '-')
-            btn = [[InlineKeyboardButton('🌲 Get Files 🌲', url=f"https://telegram.me/{temp.U_NAME}?start=getfile-{filenames}")]]
-            
-            if resized_poster:
-                await bot.send_photo(chat_id=DEENDAYAL_MOVIE_UPDATE_CHANNEL, photo=resized_poster, caption=text, reply_markup=InlineKeyboardMarkup(btn))
-            else:              
-                await bot.send_message(chat_id=DEENDAYAL_MOVIE_UPDATE_CHANNEL, text=text, reply_markup=InlineKeyboardMarkup(btn))
-
-    except:
-        pass
-
-async def get_qualities(text, qualities: list):
-    """Get all Quality from text"""
-    quality = []
-    for q in qualities:
-        if q in text:
-            quality.append(q)
-    quality = ", ".join(quality)
-    return quality[:-2] if quality.endswith(", ") else quality
 
 
 
