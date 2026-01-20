@@ -270,7 +270,7 @@ Nᴀᴍᴇ : {}
 
 Mᴇꜱꜱᴀɢᴇ : <b>{}</b>"""
     
-    CAPTION = """<b><a href="https://t.me/dreamcinezone">{file_name}</a></b>\n\n<b>⚜️ Powered By : <a https://t.me/dreamcinezone>[Dreamcine_Botz]</a></b>"""
+    CAPTION = """<b>{file_name}</b>\n\n<b>⚙️ SIZE : {file_size}</b>\n<b>🔊 LANGUAGE : {language}</b>\n\n<b>Powered By ⚜️ : <a href="https://t.me/dreamcinezone">Deendayal Dhakad</a></b>"""
 
     IMDB_TEMPLATE_TXT = """
 <b>🏷 Title</b>: <a href={url}>{title}</a>

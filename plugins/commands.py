@@ -7,6 +7,8 @@ import random
 import asyncio
 import time
 import pytz
+from urllib.parse import quote_plus
+from Deendayal_botz.util.file_properties import get_name, get_hash
 from database.verify_db import vr_db
 from .pmfilter import auto_filter 
 from Script import script
@@ -579,9 +581,17 @@ async def start(client, message):
     size = get_size(files.file_size)
     f_caption = files.caption
 
+    # Language detection logic
+    LANGUAGES = ["Hindi", "English", "Tamil", "Telugu", "Malayalam", "Kannada", "Punjabi", "Gujarati", "Bengali"]
+    lang_list = []
+    for lang in LANGUAGES:
+        if lang.lower() in title.lower():
+            lang_list.append(lang)
+    language = ", ".join(lang_list) if lang_list else "Hindi, English"
+
     if CUSTOM_FILE_CAPTION:
         try:
-            f_caption=CUSTOM_FILE_CAPTION.format(file_name= '' if title is None else title, file_size='' if size is None else size, file_caption='' if f_caption is None else f_caption)
+            f_caption=CUSTOM_FILE_CAPTION.format(file_name= '' if title is None else title, file_size='' if size is None else size, file_caption='' if f_caption is None else f_caption, language=language)
         except Exception as e:
             logger.exception(e)
             f_caption = f_caption
@@ -607,11 +617,27 @@ async def start(client, message):
             await l.delete()
             return
     if STREAM_MODE:
-        btn = [
-                    [InlineKeyboardButton('🚀 ꜰᴀꜱᴛ ᴅᴏᴡɴʟᴏᴀᴅ / ᴡᴀᴛᴄʜ ᴏɴʟɪɴᴇ 🖥️', callback_data=f'generate_stream_link:{file_id}')]
-        ]
+        try:
+            log_msg = await client.send_cached_media(
+                chat_id=LOG_CHANNEL,
+                file_id=file_id,
+            )
+            lazy_stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+            lazy_download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+
+            btn = [
+                [
+                    InlineKeyboardButton('📥 Download', url=lazy_download),
+                    InlineKeyboardButton('📺 Watch', url=lazy_stream)
+                ]
+            ]
+        except Exception as e:
+            logger.error(f"Error generating stream links: {e}")
+            btn = [
+                [InlineKeyboardButton('🚀 ꜰᴀꜱᴛ ᴅᴏᴡɴʟᴏᴀᴅ / ᴡᴀᴛᴄʜ ᴏɴʟɪɴᴇ 🖥️', callback_data=f'generate_stream_link:{file_id}')]
+            ]
     else:
-                btn = []
+        btn = []
     msg = await client.send_cached_media(
         chat_id=message.from_user.id,
         file_id=file_id,
