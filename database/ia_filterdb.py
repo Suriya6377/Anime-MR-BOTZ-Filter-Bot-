@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from struct import pack
 import re
 import base64
@@ -139,7 +140,11 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
     if file_type:
         filter['file_type'] = file_type
 
-    total_results = ((await Media.count_documents(filter))+(await Media2.count_documents(filter)))
+    count1, count2 = await asyncio.gather(
+        Media.count_documents(filter),
+        Media2.count_documents(filter)
+    )
+    total_results = count1 + count2
 
     #verifies max_results is an even number or not
     if max_results%2 != 0: 
@@ -157,7 +162,7 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
     fileList2 = await cursor2.to_list(length=max_results)
     if len(fileList2)<max_results:
         next_offset = offset+len(fileList2)
-        cursorSkipper = (next_offset-(await Media2.count_documents(filter)))
+        cursorSkipper = (next_offset-count2)
         cursor.skip(cursorSkipper if cursorSkipper>=0 else 0).limit(max_results-len(fileList2))
         fileList1 = await cursor.to_list(length=(max_results-len(fileList2)))
         files = fileList2+fileList1
