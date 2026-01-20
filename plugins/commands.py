@@ -56,7 +56,7 @@ async def start(client, message):
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
                 ],[
-                    InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
+                    InlineKeyboardButton('👤 Pʀᴏғɪʟᴇ', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
                     InlineKeyboardButton('Feature', callback_data="features"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
@@ -90,7 +90,7 @@ async def start(client, message):
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
                 ],[
-                    InlineKeyboardButton('Mini App', web_app=WebAppInfo(url=f"{URL}mini"))
+                    InlineKeyboardButton('👤 Pʀᴏғɪʟᴇ', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
                     InlineKeyboardButton('Feature', callback_data="features"),
                     InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
