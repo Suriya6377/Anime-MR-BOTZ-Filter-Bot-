@@ -270,7 +270,14 @@ Nᴀᴍᴇ : {}
 
 Mᴇꜱꜱᴀɢᴇ : <b>{}</b>"""
     
-    CAPTION = """<b>{file_name}</b>\n\n<b>⚙️ SIZE : {file_size}</b>\n<b>🔊 LANGUAGE : {language}</b>\n\n<b>Powered By ⚜️ : <a href="https://t.me/dreamcinezone">Deendayal Dhakad</a></b>"""
+    CAPTION = """<blockquote><a href="https://t.me//Deendayal_Hindi_Movies"><b>{file_name}</b></a></blockquote>
+
+<b>⚙️ sɪᴢᴇ : {file_size}</b>
+
+<b>🔊 ᴀᴜᴅɪᴏ : {language}</b>
+
+Powered By ⚜️ : <a href="https://t.me/Deendayal_dhakadd">Deendayal Dhakad</a>
+"""
 
     IMDB_TEMPLATE_TXT = """
 <b>🏷 Title</b>: <a href={url}>{title}</a>
