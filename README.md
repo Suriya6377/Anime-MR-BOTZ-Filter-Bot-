@@ -37,10 +37,8 @@ If you encounter any issues **Deploying** the bot, feel free to seek assistance 
 - [x] 𝒔𝒕𝒓𝒆𝒂𝒎 𝒎𝒐𝒅𝒆 𝒐𝒏 𝒐𝒇𝒇 
 - [x] 𝑼𝑰 𝒊𝒎𝒑𝒓𝒐𝒗𝒆
 - [x] 𝑴𝒖𝒍𝒕𝒊 𝒇𝒔𝒖𝒃 𝒔𝒖𝒑𝒑𝒐𝒓𝒕
-- [x] 𝑼𝒑𝒅𝒂𝒕𝒆 𝒎𝒐𝒗𝒊𝒆 𝒊𝒏𝒇𝒐𝒓𝒎𝒂𝒕𝒊𝒐𝒏 𝒐𝒏 𝒐𝒇𝒇 𝒄𝒐𝒎𝒎𝒂𝒏𝒅
 - [x] 𝑷𝒎 𝒔𝒆𝒂𝒓𝒄𝒉 𝒐𝒏 𝒐𝒇𝒇 𝒄𝒐𝒎𝒎𝒂𝒏𝒅 
 - [x] 𝑽𝒆𝒓𝒊𝒇𝒊𝒆𝒅 𝑼𝒔𝒆𝒓 𝒄𝒐𝒖𝒏𝒕𝒆𝒓
-- [x] 𝑼𝒑𝒅𝒂𝒕𝒆 𝒎𝒐𝒗𝒊𝒆 𝒊𝒏𝒇𝒐𝒓𝒎𝒂𝒕𝒊𝒐𝒏
 - [x] 𝑻𝒐𝒑 𝒕𝒓𝒂𝒏𝒅𝒊𝒏𝒈
 - [x] 𝑺𝒉𝒐𝒓𝒕𝒏𝒆𝒓 𝑺𝒖𝒑𝒑𝒐𝒓𝒕 𝒊𝒏 𝑺𝒕𝒓𝒆𝒂𝒎 𝒂𝒏𝒅 𝑫𝒐𝒘𝒏𝒍𝒐𝒂𝒅 𝒇𝒆𝒂𝒕𝒖𝒓𝒆
 - [x] 𝑮𝒐𝒐𝒅 𝑴𝒐𝒓𝒏𝒊𝒏𝒈, 𝑨𝒇𝒕𝒆𝒓𝒏𝒐𝒐𝒏, 𝑬𝒗𝒆𝒏𝒊𝒏𝒈, 𝑵𝒊𝒈𝒉𝒕 𝒘𝒊𝒔𝒉𝒆𝒔
@@ -95,7 +93,6 @@ If you encounter any issues **Deploying** the bot, feel free to seek assistance 
 
 ## 𝐶𝑜𝑚𝑚𝑎𝑛𝑑𝑠
 ```
-movie_update - update channel notification on off
 pm_search - pm search on off 
 verification - check Total verified users
 top - to searching 

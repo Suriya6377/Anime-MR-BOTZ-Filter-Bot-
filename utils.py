@@ -94,14 +94,6 @@ async def is_check_admin(bot, chat_id, user_id):
     except:
         return False
     
-async def get_status(bot_id):
-    try:
-        return await db.movie_update_status(bot_id) or False  
-    except Exception as e:
-        logging.error(f"Error in get_movie_update_status: {e}")
-        return False  
-
-    
 async def get_poster(query, bulk=False, id=False, file=None):
     if not id:
         query = (query.strip()).lower()
