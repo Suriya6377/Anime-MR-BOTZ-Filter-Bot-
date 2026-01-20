@@ -17,7 +17,6 @@ import string
 from typing import List
 from database.users_chats_db import db
 from bs4 import BeautifulSoup
-import requests
 import aiohttp
 from shortzy import Shortzy
 import http.client
@@ -108,7 +107,12 @@ async def get_poster(query, bulk=False, id=False, file=None):
                 year = list_to_str(year[:1]) 
         else:
             year = None
-        movieid = imdb.search_movie(title.lower(), results=10)
+
+        loop = asyncio.get_running_loop()
+        def search_movie():
+            return imdb.search_movie(title.lower(), results=10)
+
+        movieid = await loop.run_in_executor(None, search_movie)
         if not movieid:
             return None
         if year:
@@ -125,7 +129,12 @@ async def get_poster(query, bulk=False, id=False, file=None):
         movieid = movieid[0].movieID
     else:
         movieid = query
-    movie = imdb.get_movie(movieid)
+
+    loop = asyncio.get_running_loop()
+    def get_movie():
+        return imdb.get_movie(movieid)
+
+    movie = await loop.run_in_executor(None, get_movie)
     if movie.get("original air date"):
         date = movie["original air date"]
     elif movie.get("year"):
@@ -219,9 +228,11 @@ async def search_gagala(text):
         }
     text = text.replace(" ", '+')
     url = f'https://www.google.com/search?q={text}'
-    response = requests.get(url, headers=usr_agent)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'html.parser')
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=usr_agent) as response:
+            response.raise_for_status()
+            html = await response.text()
+    soup = BeautifulSoup(html, 'html.parser')
     titles = soup.find_all( 'h3' )
     return [title.getText() for title in titles]
 

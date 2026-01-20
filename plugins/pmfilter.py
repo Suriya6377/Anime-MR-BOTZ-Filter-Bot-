@@ -41,9 +41,6 @@ logger.setLevel(logging.ERROR)
 
 import requests
 import string
-import tracemalloc
-
-tracemalloc.start()
 
 
 TIMEZONE = "Asia/Kolkata"
@@ -2300,7 +2297,7 @@ async def auto_filter(client, msg, spoll=False):
     if not spoll:
         message = msg
         if message.text.startswith("/"): return  # ignore commands
-        if re.findall("((^\/|^,|^!|^\.|^[\U0001F600-\U000E007F]).*)", message.text):
+        if re.findall(r"((^\/|^,|^!|^\.|^[\U0001F600-\U000E007F]).*)", message.text):
             return
         if len(message.text) < 100:
             search = message.text         
