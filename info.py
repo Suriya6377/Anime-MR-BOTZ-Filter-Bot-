@@ -268,3 +268,49 @@ LOG_STR += (f"CUSTOM_FILE_CAPTION enabled with value {CUSTOM_FILE_CAPTION}, your
 LOG_STR += ("Long IMDB storyline enabled." if LONG_IMDB_DESCRIPTION else "LONG_IMDB_DESCRIPTION is disabled, Plot will be shorter.\n")
 LOG_STR += ("Spell Check Mode is enabled, bot will be suggesting related movies if movie name is misspelled.\n" if SPELL_CHECK_REPLY else "Spell Check Mode is disabled.\n")
 
+
+# ============================
+# Movie Notification & Update Settings
+# ============================
+MOVIE_UPDATE_NOTIFICATION = bool(environ.get('MOVIE_UPDATE_NOTIFICATION', True))  # Notification On (True) / Off (False)
+MOVIE_UPDATE_CHANNEL = int(environ.get('MOVIE_UPDATE_CHANNEL', '-1002456267845'))  # Notification of sent to your channel
+DEENDAYAL_IMAGE_FETCH = bool(environ.get('DEENDAYAL_IMAGE_FETCH', True))  # On (True) / Off (False)
+LINK_PREVIEW = bool(environ.get('LINK_PREVIEW', False)) # Shows link preview in notification msg instead of image
+ABOVE_PREVIEW = bool(environ.get('ABOVE_PREVIEW', False)) # Shows link preview above the text in notification msg if True else below the msg
+TMDB_API_KEY = environ.get('TMDB_API_KEY', 'd190196b912b72c04cc5c7c8948895aa') # preffer to use your own tmdb API Key get it from https://www.themoviedb.org/settings/api
+TMDB_POSTER = bool(environ.get('TMDB_POSTER', True)) # Shows TMDB poster in notification msg
+IMDB_POSTER = bool(environ.get('IMDB_POSTER', True)) # Shows IMDB poster in notification msg
+LANDSCAPE_POSTER = bool(environ.get('LANDSCAPE_POSTER', True)) # Shows landscape poster in notification msg
+
+BAD_WORDS = {
+    "PrivateMovieZ",
+    "toonworld4all",
+    "themoviesboss",
+    "1tamilmv",
+    "tamilblasters",
+    "1tamilblasters",
+    "skymovieshd",
+    "extraflix",
+    "hdm2",
+    "moviesmod",
+    "hdhub4u",
+    "mkvcinemas",
+    "primefix",
+    "join",
+    "www",
+    "villa",
+    "tg",
+    "Deendayal dhaked",
+    "Deendayal dhakad",
+    "dhaked",
+    "dhakad",
+    "Deendayal",
+    "HDHub4u.Tv",
+    "4kHdHub.Com",
+    "4kHdHub",
+    "Filmy4wap xyz",
+    "Filmy4wap",
+    "[Toonworld4all]",
+    "Toonworld4all"
+    "original"
+}
