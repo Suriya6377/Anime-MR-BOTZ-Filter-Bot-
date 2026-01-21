@@ -279,6 +279,22 @@ Mᴇꜱꜱᴀɢᴇ : <b>{}</b>"""
 Powered By ⚜️ : <a href="https://t.me/Deendayal_dhakadd">Deendayal Dhakad</a>
 """
 
+    MOVIE_UPDATE_NOTIFY_TXT = """<blockquote><b>📥 𝖭𝖤𝖶 𝖥𝖨𝖫𝖤 𝖠𝖣𝖣𝖤𝖣 ✅</b></blockquote>
+<b>
+🫥  <b><code>{filename}</code> ⿻ </b> | ⭐ <b><a href={poster_url}></a><a href={imdb_url}>ɪᴍᴅʙ ɪɴғᴏ</a></b>
+
+🎭 ɢᴇɴʀᴇs : <b>{genres}</b>
+🌐 ᴏᴛᴛ    : <b>{ott}</b>
+
+📽 ǫᴜᴀʟɪᴛʏ : <b>{quality}</b>
+🔊 ᴀᴜᴅɪᴏ   : <b>{language}</b>
+
+🎞 ʀᴀᴛɪɴɢ  : <b>{rating}</b>
+<b>{episodes}</b>
+<blockquote><b>〽️ Powered by <a href="https://t.me/Nobita_Files_Filter_bot">Deendayal Dhakad</a></b></blockquote>
+<b>🕒 {date} | {time}</b>
+"""
+
     IMDB_TEMPLATE_TXT = """
 <b>🏷 Title</b>: <a href={url}>{title}</a>
 🎭 Genres: {genres}
