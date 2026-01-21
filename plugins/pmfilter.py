@@ -17,7 +17,7 @@ from info import *
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto, WebAppInfo
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait, UserIsBlocked, MessageNotModified, PeerIdInvalid
-from utils import get_size, is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, imdb
+from utils import get_size, is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, imdb, is_check_admin
 from fuzzywuzzy import process
 from database.users_chats_db import db
 from database.config_db import mdb
@@ -75,10 +75,21 @@ async def get_shortlink(url):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, get_shortlink_sync, url)
 
-@Client.on_message(filters.group & filters.text & filters.incoming)
+@Client.on_message(filters.group & filters.text & filters.incoming, group=-1)
 async def give_filter(client, message):
+    if message.chat.id != SUPPORT_CHAT_ID:
+        user = message.from_user
+        if user and not await is_check_admin(client, message.chat.id, user.id):
+            if re.search(r'[@#]|https?://|t\.me|telegram\.me', message.text, re.IGNORECASE) or message.text.startswith('/'):
+                await message.delete()
+                return message.stop_propagation()
+
     if EMOJI_MODE:
-        await message.react(emoji=random.choice(REACTIONS), big=True)
+        try:
+            await message.react(emoji=random.choice(REACTIONS), big=True)
+        except Exception:
+            await message.react(emoji="⚡️", big=True)
+
     await mdb.update_top_messages(message.from_user.id, message.text)
     if message.chat.id != SUPPORT_CHAT_ID:
         manual = await manual_filters(client, message)
@@ -86,6 +97,10 @@ async def give_filter(client, message):
             settings = await get_settings(message.chat.id)
             try:
                 if settings['auto_ffilter']:
+                    if re.search(r'https?://\S+|www\.\S+|t\.me/\S+', message.text):
+                        if await is_check_admin(client, message.chat.id, message.from_user.id):
+                            return
+                        return await message.delete()
                     await auto_filter(client, message)
             except KeyError:
                 grpid = await active_connection(str(message.from_user.id))
@@ -2997,7 +3012,6 @@ async def global_filters(client, message, text=False):
                 break
     else:
         return False
-
 
 
 
