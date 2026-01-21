@@ -1,6 +1,6 @@
 
 import motor.motor_asyncio
-from info import DATABASE_NAME, DATABASE_URI, DATABASE_URI2, IMDB, IMDB_TEMPLATE, MELCOW_NEW_USERS, P_TTI_SHOW_OFF, SINGLE_BUTTON, SPELL_CHECK_REPLY, PROTECT_CONTENT, AUTO_DELETE, MAX_BTN, AUTO_FFILTER, SHORTLINK_API, SHORTLINK_URL, IS_SHORTLINK, TUTORIAL, IS_TUTORIAL, VERIFY, PM_SEARCH, MULTI_FSUB, LOG_CHANNEL
+from info import DATABASE_NAME, DATABASE_URI, DATABASE_URI2, IMDB, IMDB_TEMPLATE, MELCOW_NEW_USERS, P_TTI_SHOW_OFF, SINGLE_BUTTON, SPELL_CHECK_REPLY, PROTECT_CONTENT, AUTO_DELETE, MAX_BTN, AUTO_FFILTER, SHORTLINK_API, SHORTLINK_URL, IS_SHORTLINK, TUTORIAL, IS_TUTORIAL, VERIFY, PM_SEARCH, MULTI_FSUB, LOG_CHANNEL, MOVIE_UPDATE_NOTIFICATION
 import datetime
 import pytz  
 from pymongo.errors import DuplicateKeyError
@@ -271,6 +271,12 @@ class Database:
 
     async def update_pm_search_status(self, bot_id, enable):
         await self.update_bot_setting(bot_id, 'PM_SEARCH', enable)
+
+    async def movie_update_status(self, bot_id):
+        return await self.get_bot_setting(bot_id, 'MOVIE_UPDATE', MOVIE_UPDATE_NOTIFICATION)
+
+    async def update_movie_update_status(self, bot_id, enable):
+        await self.update_bot_setting(bot_id, 'MOVIE_UPDATE', enable)
 
         
 db = Database(DATABASE_URI, DATABASE_NAME)
