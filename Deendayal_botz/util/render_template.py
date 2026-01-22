@@ -1,6 +1,6 @@
-#Thanks @dreamcinezone for helping in this journey 
 
 import jinja2
+import re
 from info import *
 from Deendayal_botz.Bot import DeendayalBot
 from Deendayal_botz.util.human_readable import humanbytes
@@ -38,6 +38,8 @@ async def render_page(id, secure_hash, src=None):
         template = jinja2.Template(f.read())
 
     file_name = file_data.file_name.replace("_", " ")
+    file_name = re.sub(r"[\.\[\]\{\}\(\)\@]", " ", file_name)
+    file_name = re.sub(r"\s+", " ", file_name).strip()
 
     return template.render(
         file_name=file_name,
