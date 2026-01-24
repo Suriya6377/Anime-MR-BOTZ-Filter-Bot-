@@ -2562,9 +2562,9 @@ async def advantage_spell_chok(client, message):
     try:
         movies = await get_poster(search, bulk=True)
     except:
-        k = await message.reply(script.I_CUDNT.format(message.from_user.mention))
-        await asyncio.sleep(60)
-        await k.delete()
+        # k = await message.reply(script.I_CUDNT.format(message.from_user.mention))
+        # await asyncio.sleep(60)
+        # await k.delete()
         try:
             await message.delete()
         except:
