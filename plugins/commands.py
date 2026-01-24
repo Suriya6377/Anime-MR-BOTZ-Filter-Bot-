@@ -61,9 +61,8 @@ async def start(client, message):
                     InlineKeyboardButton('👤 Pʀᴏғɪʟᴇ', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
                     InlineKeyboardButton('Feature', callback_data="features"),
-                    InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
-                ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
+                ],[
                     InlineKeyboardButton('ᴇᴀʀɴ ᴍᴏɴᴇʏ..💵', callback_data="shortlink_info")
                 ]]
         reply_markup = InlineKeyboardMarkup(buttons)
@@ -95,9 +94,8 @@ async def start(client, message):
                     InlineKeyboardButton('👤 Pʀᴏғɪʟᴇ', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
                     InlineKeyboardButton('Feature', callback_data="features"),
-                    InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
-                ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
+                ],[
                     InlineKeyboardButton('ᴇᴀʀɴ ᴍᴏɴᴇʏ..💵', callback_data="shortlink_info")
                 ]]
         reply_markup = InlineKeyboardMarkup(buttons)
@@ -1645,7 +1643,9 @@ async def features_callback(client, callback_query):
     buttons = [
         [InlineKeyboardButton('Telegraph ⚡', callback_data='telegraph_info'),
          InlineKeyboardButton('Font 🎨', callback_data='font_info')],
-        [InlineKeyboardButton('TMDB 🎬', callback_data='tmdb_info')],
+        [InlineKeyboardButton('TMDB 🎬', callback_data='tmdb_info'),
+         InlineKeyboardButton('Sticker ID', callback_data='sticker_info')],
+        [InlineKeyboardButton('Command', callback_data='help')],
         [InlineKeyboardButton('🔙 Back', callback_data='start')]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
@@ -1683,4 +1683,16 @@ async def font_info_callback(client, callback_query):
         await callback_query.message.edit_caption(script.FONT_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
     else:
         await callback_query.message.edit_text(script.FONT_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("sticker_info"))
+async def sticker_info_callback(client, callback_query):
+    temp.STICKER_ID[callback_query.from_user.id] = True
+    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='features')]]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    text = "<b>Now send me the sticker to get its ID...</b>"
+    if callback_query.message.photo:
+        await callback_query.message.edit_caption(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    else:
+        await callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
     await callback_query.answer()
