@@ -547,4 +547,11 @@ Exᴀᴍᴘʟᴇ 👉 /Instagram ʜᴛᴛᴘs://ᴡᴡᴡ.ɪɴsᴛᴀɢʀᴀᴍ.
  ɴᴏᴛᴇ: 
   
  ᴇᴠᴇʀʏᴏɴᴇ ᴄᴀɴ ᴜsᴇ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ , ɪꜰ sᴘᴀᴍɪɴɢ ʜᴀᴘᴘᴇɴs ʙᴏᴛ ᴡɪʟʟ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀʟʟʏ ʙᴀɴ ʏᴏᴜ ꜰʀᴏᴍ ᴛʜᴇ ɢʀᴏᴜᴘ.</b>"""
+
+    TMDB_TXT = """<b>TMDB Search Feature</b>
+
+Use /p command to search for movies/shows on TMDB.
+
+Example:
+<code>/p Avengers</code>"""
     
