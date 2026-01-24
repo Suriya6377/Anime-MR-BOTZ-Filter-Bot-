@@ -245,5 +245,6 @@ async def get_movie_detailsx(query, id=False, file=None):
     details['all_backdrops'] = backdrops.get('all', [])
     details['raw_posters'] = posters
     details['raw_backdrops'] = backdrops
+    details['original_language'] = original_language
 
     return details
