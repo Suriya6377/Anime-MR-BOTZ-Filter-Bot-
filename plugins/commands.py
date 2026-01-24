@@ -10,7 +10,8 @@ import pytz
 from urllib.parse import quote_plus
 from Deendayal_botz.util.file_properties import get_name, get_hash
 from database.verify_db import vr_db
-from .pmfilter import auto_filter 
+from .pmfilter import auto_filter
+from plugins.Deendayal.Imdbposter import get_movie_detailsx
 from Script import script
 from datetime import datetime
 from database.refer import referdb
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 TIMEZONE = "Asia/Kolkata"
 BATCH_FILES = {}
+TMDB_CACHE = {}
 
 @Client.on_message(filters.command("start") & filters.incoming)
 async def start(client, message):
@@ -1494,11 +1496,156 @@ async def confirmation_handler(client, callback_query):
 
 
 
+LANG_CODES = {
+    'en': 'English',
+    'hi': 'Hindi',
+    'te': 'Telugu',
+    'ta': 'Tamil',
+    'ml': 'Malayalam',
+    'kn': 'Kannada',
+    'bn': 'Bengali',
+    'gu': 'Gujarati',
+    'pa': 'Punjabi',
+    'mr': 'Marathi',
+    'fr': 'French',
+    'de': 'German',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'zh': 'Chinese',
+    'es': 'Spanish',
+    'it': 'Italian',
+    'ru': 'Russian',
+    'pt': 'Portuguese',
+    'tr': 'Turkish'
+}
+
+@Client.on_message(filters.command(["p", "tmdb"]))
+async def tmdb_search(client, message):
+    if len(message.command) < 2:
+        return await message.reply_text("<b>Please provide a movie name to search.\nExample: /p Avengers</b>")
+
+    query = message.text.split(None, 1)[1]
+    m = await message.reply_text("<b>Searching on TMDB...</b>")
+
+    details = await get_movie_detailsx(query)
+
+    if not details:
+        await m.edit("<b>No results found on TMDB.</b>")
+        return
+
+    # Categories logic
+    raw_backdrops = details.get('raw_backdrops', {})
+    original_lang = details.get('original_language')
+
+    # Posters
+    all_posters = details.get('all_posters', [])
+
+    # Landscapes
+    en_landscapes = raw_backdrops.get('en', [])
+
+    native_landscapes = []
+    native_lang_name = "Original"
+    if original_lang and original_lang != 'en':
+        native_landscapes = raw_backdrops.get(original_lang, [])
+        native_lang_name = LANG_CODES.get(original_lang, original_lang.title())
+
+    other_landscapes = []
+    for lang, urls in raw_backdrops.items():
+        if lang not in ['en', 'all', 'xx', original_lang]:
+            other_landscapes.extend(urls)
+
+    # Store in cache
+    key = f"{message.chat.id}_{m.id}"
+
+    # Construct Text
+    text = f"🎬 <b>Images for: {details.get('title')} ({details.get('year')})</b>\n\n"
+    text += f"• <b>TMDB Url</b> 🔗: {details.get('tmdb_url')}\n"
+    text += f"• <b>TMDB ID</b>: {details.get('tmdb_id')}\n\n"
+    text += "Select a category below to get the links."
+
+    # Buttons
+    btns = []
+    if all_posters:
+        btns.append([InlineKeyboardButton(f"Posters ({len(all_posters)})", callback_data=f"tmdb_show#posters#{key}")])
+
+    if en_landscapes:
+        btns.append([InlineKeyboardButton(f"English Landscape ({len(en_landscapes)})", callback_data=f"tmdb_show#en_land#{key}")])
+
+    if native_landscapes:
+        btns.append([InlineKeyboardButton(f"{native_lang_name} Landscape ({len(native_landscapes)})", callback_data=f"tmdb_show#native_land#{key}")])
+
+    if other_landscapes:
+         btns.append([InlineKeyboardButton(f"Other Landscape ({len(other_landscapes)})", callback_data=f"tmdb_show#other_land#{key}")])
+
+    btns.append([InlineKeyboardButton("Close", callback_data="close_data")])
+
+    # Cache cleanup
+    if len(TMDB_CACHE) > 500:
+        keys = list(TMDB_CACHE.keys())
+        for k in keys[:100]:
+            TMDB_CACHE.pop(k, None)
+
+    TMDB_CACHE[key] = {
+        'posters': all_posters,
+        'en_land': en_landscapes,
+        'native_land': native_landscapes,
+        'other_land': other_landscapes,
+        'native_name': native_lang_name,
+        'main_text': text,
+        'main_markup': InlineKeyboardMarkup(btns)
+    }
+
+    await m.edit(text, reply_markup=InlineKeyboardMarkup(btns), disable_web_page_preview=True)
+
+@Client.on_callback_query(filters.regex(r"^tmdb_show"))
+async def tmdb_show_callback(client, callback_query):
+    _, category, key = callback_query.data.split("#")
+
+    data = TMDB_CACHE.get(key)
+    if not data:
+        await callback_query.answer("Session expired. Search again.", show_alert=True)
+        return
+
+    if category == "back":
+        await callback_query.message.edit_text(
+            data['main_text'],
+            reply_markup=data['main_markup'],
+            disable_web_page_preview=True
+        )
+        await callback_query.answer()
+        return
+
+    # Handle category click
+    urls = data.get(category, [])
+    if not urls:
+        await callback_query.answer("No images found.", show_alert=True)
+        return
+
+    # Build list text
+    cat_name = "Posters"
+    if category == 'en_land': cat_name = "English Landscape"
+    elif category == 'native_land': cat_name = f"{data.get('native_name', 'Original')} Landscape"
+    elif category == 'other_land': cat_name = "Other Landscape"
+
+    text = f"• <b>{cat_name}:</b>\n\n"
+
+    # Limit to avoid flood?
+    for i, url in enumerate(urls[:70], 1):
+        text += f"{i}. <a href='{url}'>Click Here</a>\n"
+
+    if len(urls) > 70:
+        text += f"\n...and {len(urls)-70} more."
+
+    buttons = [[InlineKeyboardButton("🔙 Back", callback_data=f"tmdb_show#back#{key}")]]
+
+    await callback_query.message.edit_text(text, reply_markup=InlineKeyboardMarkup(buttons), disable_web_page_preview=True)
+
 @Client.on_callback_query(filters.regex("features"))
 async def features_callback(client, callback_query):
     buttons = [
         [InlineKeyboardButton('Telegraph ⚡', callback_data='telegraph_info'),
          InlineKeyboardButton('Font 🎨', callback_data='font_info')],
+        [InlineKeyboardButton('TMDB 🎬', callback_data='tmdb_info')],
         [InlineKeyboardButton('🔙 Back', callback_data='start')]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
@@ -1506,6 +1653,16 @@ async def features_callback(client, callback_query):
         await callback_query.message.edit_caption(caption="<b>Choose a Feature 👇</b>", reply_markup=reply_markup)
     else:
         await callback_query.message.edit_text(text="<b>Choose a Feature 👇</b>", reply_markup=reply_markup)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("tmdb_info"))
+async def tmdb_info_callback(client, callback_query):
+    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='features')]]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    if callback_query.message.photo:
+        await callback_query.message.edit_caption(script.TMDB_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    else:
+        await callback_query.message.edit_text(script.TMDB_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
     await callback_query.answer()
 
 @Client.on_callback_query(filters.regex("telegraph_info"))
