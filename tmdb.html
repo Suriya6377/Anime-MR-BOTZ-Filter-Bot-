@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEENDAYAL DHAKAD</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary-color: #ff007a;
+            --bg-color: #0f0f13;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --secondary-text: #a0a0a0;
+            --glow: 0 0 10px rgba(255, 0, 122, 0.5);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at top left, #2a1a3a, #0f0f13);
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff007a, #7a00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 0 20px rgba(255, 0, 122, 0.3);
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            box-sizing: border-box;
+            backdrop-filter: blur(10px);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: var(--glow);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #ff80bf;
+            text-shadow: 0 0 10px rgba(255, 128, 191, 0.3);
+        }
+
+        .language-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-btn.active {
+            background: linear-gradient(90deg, rgba(255, 0, 122, 0.2), rgba(122, 0, 255, 0.2));
+            border-color: #ff007a;
+            box-shadow: 0 0 20px rgba(255, 0, 122, 0.4);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        .search-btn {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            width: 100%;
+            margin-top: -10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .movie-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .movie-meta {
+            font-size: 14px;
+            color: var(--secondary-text);
+            margin-bottom: 4px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px;
+            border-radius: 16px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 0, 122, 0.3);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .grid.backdrops {
+             grid-template-columns: 1fr;
+        }
+
+        .grid-item {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            transition: transform 0.3s, box-shadow 0.3s;
+            aspect-ratio: 2/3;
+        }
+
+        .grid.backdrops .grid-item {
+             aspect-ratio: 16/9;
+        }
+
+        .grid-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 0, 122, 0.5);
+        }
+
+        .grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .download-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            color: white;
+            text-decoration: none;
+        }
+
+        .download-btn:hover {
+            background: var(--primary-color);
+            box-shadow: 0 0 15px var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        .download-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+        }
+
+        .home-btn {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .home-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 15px rgba(255, 0, 122, 0.3);
+            border-color: var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        .loader {
+            display: none;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--primary-color);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        @keyframes spin { 0% { transform: translateY(-50%) rotate(0deg); } 100% { transform: translateY(-50%) rotate(360deg); } }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span style="font-size: 24px;">🎴</span> DEENDAYAL DHAKAD
+            </div>
+            <div class="home-btn" onclick="goHome()" title="Home">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search movie/series (e.g. Jawan)">
+            <div id="loader" class="loader"></div>
+        </div>
+
+        <button id="searchBtn" class="glass-btn search-btn" onclick="performSearch(document.getElementById('searchInput').value)">
+            Search
+        </button>
+
+        <div id="welcomeMsg" style="text-align: center; margin-top: 50px; opacity: 0.7;">
+            <p>Search for your favorite movies & series<br>to get high-quality posters & backdrops.</p>
+        </div>
+
+        <div id="contentArea" style="display:none;">
+            <div class="glass-panel" id="movieMeta">
+                <div class="section-title">ℹ️ Current Selection</div>
+                <div class="movie-title" id="mTitle"></div>
+                <div class="movie-meta" id="mRelease"></div>
+                <div class="movie-meta" id="mRating"></div>
+                <div class="movie-meta" id="mTmdb"></div>
+            </div>
+
+            <div class="glass-panel">
+                <div class="section-title">🔻 Filter Options</div>
+                <div class="section-title" style="font-size: 14px; color: #ccc; margin-top:0;">🌐 Language</div>
+                <div class="language-options" id="langOptions">
+                    <!-- Dynamic Options -->
+                </div>
+            </div>
+
+            <div class="glass-panel" style="background: linear-gradient(180deg, rgba(40,20,60,0.4), rgba(20,20,40,0.4));">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('posters')">
+                        <span>📱</span> Posters
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('backdrops')">
+                        <span>💻</span> Backdrops
+                    </button>
+                </div>
+
+                <div class="grid" id="imageGrid">
+                    <!-- Images go here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+        let currentTab = 'posters';
+        let currentLang = 'all';
+
+        const searchInput = document.getElementById('searchInput');
+        const loader = document.getElementById('loader');
+        const contentArea = document.getElementById('contentArea');
+        const welcomeMsg = document.getElementById('welcomeMsg');
+
+        searchInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                performSearch(this.value);
+            }
+        });
+
+        async function performSearch(query) {
+            if (!query) return;
+
+            loader.style.display = 'block';
+            contentArea.style.display = 'none';
+            welcomeMsg.style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/poster/search?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    welcomeMsg.style.display = 'block';
+                } else {
+                    currentData = data;
+                    renderMovieInfo();
+                    generateLangOptions();
+                    renderImages();
+                    contentArea.style.display = 'block';
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error fetching data");
+                welcomeMsg.style.display = 'block';
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        function renderMovieInfo() {
+            document.getElementById('mTitle').innerText = `${currentData.title} (${currentData.year || 'N/A'})`;
+            document.getElementById('mRelease').innerText = currentData.release_date ? `Release: ${currentData.release_date}` : '';
+            document.getElementById('mRating').innerText = `Rating: ${currentData.rating || 'N/A'} ⭐`;
+            document.getElementById('mTmdb').innerText = `TMDB ID: ${currentData.tmdb_id || 'N/A'}`;
+        }
+
+        function generateLangOptions() {
+            const container = document.getElementById('langOptions');
+            container.innerHTML = '';
+
+            // Helper to create button
+            const createBtn = (text, code, count) => {
+                const btn = document.createElement('button');
+                btn.className = `glass-btn ${currentLang === code ? 'active' : ''}`;
+                btn.innerText = `${text} (${count})`;
+                btn.onclick = () => {
+                    document.querySelectorAll('.glass-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentLang = code;
+                    renderImages();
+                };
+                return btn;
+            };
+
+            // Count images based on current tab
+            const source = currentTab === 'posters' ? currentData.raw_posters : currentData.raw_backdrops;
+            if (!source) return;
+
+            // All
+            let total = 0;
+            if (source['all']) total = source['all'].length;
+            container.appendChild(createBtn('All Languages', 'all', total));
+
+            // Iterate keys
+            for (const [key, val] of Object.entries(source)) {
+                if (key === 'all') continue;
+                let label = key;
+                if (key === 'en') label = 'English';
+                else if (key === 'xx' || key === 'null') label = 'No Language';
+                else if (key === 'hi') label = 'Hindi';
+                else if (key === 'te') label = 'Telugu';
+                else if (key === 'ta') label = 'Tamil';
+                else if (key === 'kn') label = 'Kannada';
+                else if (key === 'ml') label = 'Malayalam';
+                else label = key.toUpperCase();
+
+                if (val && val.length > 0) {
+                    container.appendChild(createBtn(label, key, val.length));
+                }
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const btn = tab === 'posters' ? document.querySelector('.tab-btn:first-child') : document.querySelector('.tab-btn:nth-child(2)');
+            btn.classList.add('active');
+
+            // Re-render lang options because counts change
+            generateLangOptions();
+            renderImages();
+        }
+
+        function renderImages() {
+            const grid = document.getElementById('imageGrid');
+            grid.innerHTML = '';
+
+            if (currentTab === 'posters') {
+                grid.classList.remove('backdrops');
+            } else {
+                grid.classList.add('backdrops');
+            }
+
+            const source = currentTab === 'posters' ? currentData.raw_posters : currentData.raw_backdrops;
+            const images = source[currentLang] || [];
+
+            images.forEach(url => {
+                const div = document.createElement('div');
+                div.className = 'grid-item';
+
+                const img = document.createElement('img');
+                img.src = url;
+                img.loading = "lazy";
+
+                const btn = document.createElement('a');
+                btn.className = 'download-btn';
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
+                btn.href = url;
+                btn.target = "_blank"; // Open in new tab
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    Telegram.WebApp.openLink(url);
+                };
+
+                div.appendChild(img);
+                div.appendChild(btn);
+                grid.appendChild(div);
+            });
+        }
+
+        function goHome() {
+            searchInput.value = '';
+            contentArea.style.display = 'none';
+            welcomeMsg.style.display = 'block';
+            currentData = null;
+            loader.style.display = 'none';
+        }
+
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+
+        // Check for theme params to match app colors
+        if (Telegram.WebApp.themeParams) {
+             // Optional: Adapt colors
+        }
+    </script>
+</body>
+</html>
