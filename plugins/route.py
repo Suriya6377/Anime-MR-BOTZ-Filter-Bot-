@@ -71,6 +71,16 @@ async def tmdb_handler(request):
     except Exception as e:
         return web.Response(text=f"Error loading tmdb.html: {e}", status=500)
 
+@routes.get("/ott", allow_head=True)
+async def ott_handler(request):
+    try:
+        file_path = os.path.join(os.getcwd(), 'ott.html')
+        loop = asyncio.get_running_loop()
+        content = await loop.run_in_executor(None, lambda: open(file_path, 'r', encoding='utf-8').read())
+        return web.Response(text=content, content_type='text/html')
+    except Exception as e:
+        return web.Response(text=f"Error loading ott.html: {e}", status=500)
+
 @routes.get("/api/tmdb/search", allow_head=True)
 async def api_tmdb_search(request):
     query = request.rel_url.query.get("query")
@@ -86,6 +96,37 @@ async def api_tmdb_search(request):
             "language": "en-US",
             "page": "1"
         }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return web.json_response(data)
+                else:
+                    return web.json_response({"error": f"TMDB Error: {resp.status}"}, status=resp.status)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+@routes.get("/api/tmdb/discover", allow_head=True)
+async def api_tmdb_discover(request):
+    try:
+        provider_id = request.rel_url.query.get("with_watch_providers")
+        watch_region = request.rel_url.query.get("watch_region", "IN")
+        page = request.rel_url.query.get("page", "1")
+        media_type = request.rel_url.query.get("type", "movie") # movie or tv
+
+        url = f"https://api.themoviedb.org/3/discover/{media_type}"
+        params = {
+            "api_key": TMDB_API_KEY,
+            "watch_region": watch_region,
+            "page": page,
+            "sort_by": "popularity.desc",
+            "include_adult": "false",
+            "language": "en-US"
+        }
+
+        if provider_id and provider_id != "null":
+             params["with_watch_providers"] = provider_id
+
         async with aiohttp.ClientSession() as session:
             async with session.get(url, params=params) as resp:
                 if resp.status == 200:
@@ -261,6 +302,7 @@ async def send_image_handler(request):
     except Exception as e:
         logging.error(f"Error sending image: {e}")
         return web.json_response({"error": str(e)}, status=500)
+
 
 @routes.get(r"/{path:\S+}", allow_head=True)
 async def stream_handler(request: web.Request):
