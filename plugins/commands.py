@@ -1643,7 +1643,7 @@ async def features_callback(client, callback_query):
     buttons = [
         [InlineKeyboardButton('Telegraph ⚡', callback_data='telegraph_info'),
          InlineKeyboardButton('Font 🎨', callback_data='font_info')],
-        [InlineKeyboardButton('TMDB 🎬', callback_data='tmdb_info'),
+        [InlineKeyboardButton('TMDB 🎬', web_app=WebAppInfo(url=f"{URL}tmdb")),
          InlineKeyboardButton('Sticker ID', callback_data='sticker_info')],
         [InlineKeyboardButton('Command', callback_data='help')],
         [InlineKeyboardButton('🔙 Back', callback_data='start')]
@@ -1696,3 +1696,20 @@ async def sticker_info_callback(client, callback_query):
     else:
         await callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
     await callback_query.answer()
+
+@Client.on_message(filters.service)
+async def web_app_data_handler(client, message):
+    if not message.web_app_data:
+        return
+    try:
+        data = json.loads(message.web_app_data.data)
+        if data.get('action') == 'download_image':
+            url = data.get('url')
+            title = data.get('title')
+            await message.reply_photo(
+                photo=url,
+                caption=f"<b>🎬 {title}</b>",
+                parse_mode=enums.ParseMode.HTML
+            )
+    except Exception as e:
+        print(f"Error handling web app data: {e}")

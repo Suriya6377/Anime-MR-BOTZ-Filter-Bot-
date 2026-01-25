@@ -1,10 +1,15 @@
 from aiohttp import web
+import aiohttp
+import asyncio
 import re
 import math
 import logging
 import secrets
 import time
 import mimetypes
+import json
+from urllib.parse import parse_qs
+from pyrogram import enums
 from aiohttp.http_exceptions import BadStatusLine
 from Deendayal_botz.Bot import multi_clients, work_loads, DeendayalBot
 from Deendayal_botz.server.exceptions import FIleNotFound, InvalidHash
@@ -12,6 +17,7 @@ from Deendayal_botz.zzint import StartTime, __version__
 from Deendayal_botz.util.custom_dl import ByteStreamer
 from Deendayal_botz.util.time_format import get_readable_time
 from Deendayal_botz.util.render_template import render_page
+import os
 from info import *
 
 
@@ -54,6 +60,207 @@ except Exception as e:
 @routes.get("/mini", allow_head=True)
 async def mini_handler(request):
     return web.Response(text=mini_content, content_type='text/html')
+
+@routes.get("/tmdb", allow_head=True)
+async def tmdb_handler(request):
+    try:
+        file_path = os.path.join(os.getcwd(), 'tmdb.html')
+        loop = asyncio.get_running_loop()
+        content = await loop.run_in_executor(None, lambda: open(file_path, 'r').read())
+        return web.Response(text=content, content_type='text/html')
+    except Exception as e:
+        return web.Response(text=f"Error loading tmdb.html: {e}", status=500)
+
+@routes.get("/api/tmdb/search", allow_head=True)
+async def api_tmdb_search(request):
+    query = request.rel_url.query.get("query")
+    if not query:
+        return web.json_response({"results": []})
+
+    try:
+        url = "https://api.themoviedb.org/3/search/multi"
+        params = {
+            "api_key": TMDB_API_KEY,
+            "query": query,
+            "include_adult": "false",
+            "language": "en-US",
+            "page": "1"
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return web.json_response(data)
+                else:
+                    return web.json_response({"error": f"TMDB Error: {resp.status}"}, status=resp.status)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+@routes.get("/api/poster/search", allow_head=True)
+async def api_poster_search(request):
+    query = request.rel_url.query.get("query")
+    if not query:
+        return web.json_response({"error": "No query provided"}, status=400)
+
+    try:
+        # 1. Search
+        search_url = "https://api.themoviedb.org/3/search/multi"
+        params = {
+            "api_key": TMDB_API_KEY,
+            "query": query,
+            "include_adult": "false",
+            "language": "en-US",
+            "page": "1"
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(search_url, params=params) as resp:
+                if resp.status != 200:
+                    return web.json_response({"error": "TMDB Search Failed"}, status=resp.status)
+                data = await resp.json()
+
+            if not data.get("results"):
+                 return web.json_response({"error": "No results found"}, status=404)
+
+            # 2. Get Best Match
+            # Filter for movie or tv only
+            results = [r for r in data["results"] if r.get("media_type") in ["movie", "tv"]]
+            if not results:
+                 return web.json_response({"error": "No movie/tv results found"}, status=404)
+
+            item = results[0]
+            media_type = item.get("media_type")
+            tmdb_id = item.get("id")
+
+            title = item.get("title") or item.get("name")
+            release_date = item.get("release_date") or item.get("first_air_date")
+            year = release_date.split("-")[0] if release_date else ""
+            rating = str(round(item.get("vote_average", 0), 1))
+
+            # 3. Get Images
+            img_url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}/images"
+
+            # Broad list of languages to support the frontend filters
+            langs = "en,null,hi,kn,te,ta,ml,bn,gu,mr,pa,fr,es,de,ru,ja,ko,zh"
+            img_params = {
+                "api_key": TMDB_API_KEY,
+                "include_image_language": langs
+            }
+
+            async with session.get(img_url, params=img_params) as img_resp:
+                if img_resp.status != 200:
+                     return web.json_response({"error": "TMDB Images Failed"}, status=img_resp.status)
+                img_data = await img_resp.json()
+
+            # 4. Process Images
+            base_url = "https://image.tmdb.org/t/p/original"
+
+            raw_posters = {"all": []}
+            raw_backdrops = {"all": []}
+
+            def process_list(source_list, target_dict):
+                for img in source_list:
+                    path = img.get("file_path")
+                    if not path: continue
+                    full_url = base_url + path
+                    iso = img.get("iso_639_1")
+
+                    # Add to 'all'
+                    target_dict["all"].append(full_url)
+
+                    # Add to specific lang
+                    key = "null" if iso is None else iso
+                    if key not in target_dict:
+                        target_dict[key] = []
+                    target_dict[key].append(full_url)
+
+            process_list(img_data.get("posters", []), raw_posters)
+            process_list(img_data.get("backdrops", []), raw_backdrops)
+
+            return web.json_response({
+                "title": title,
+                "year": year,
+                "release_date": release_date,
+                "rating": rating,
+                "tmdb_id": tmdb_id,
+                "raw_posters": raw_posters,
+                "raw_backdrops": raw_backdrops
+            })
+
+    except Exception as e:
+        logging.error(f"Search Error: {e}")
+        return web.json_response({"error": str(e)}, status=500)
+
+@routes.get("/api/tmdb/images", allow_head=True)
+async def api_tmdb_images(request):
+    id = request.rel_url.query.get("id")
+    type = request.rel_url.query.get("type", "movie") # movie or tv
+    if not id:
+        return web.json_response({"posters": [], "backdrops": []})
+
+    try:
+        url = f"https://api.themoviedb.org/3/{type}/{id}/images"
+        language = request.rel_url.query.get("language", "en")
+
+        # Logic to handle different language selections
+        if language == "all":
+             include_image_language = "en,hi,kn,te,ta,ml,bn,gu,mr,pa,null"
+        elif language == "null":
+             include_image_language = "null"
+        else:
+             include_image_language = f"{language},null"
+
+        params = {
+            "api_key": TMDB_API_KEY,
+            "include_image_language": include_image_language
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return web.json_response(data)
+                else:
+                    return web.json_response({"error": f"TMDB Error: {resp.status}"}, status=resp.status)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+@routes.post("/api/tmdb/send_image")
+async def send_image_handler(request):
+    try:
+        data = await request.json()
+        init_data = data.get('initData')
+        image_url = data.get('url')
+        title = data.get('title')
+
+        if not init_data or not image_url:
+            return web.json_response({"error": "Missing data"}, status=400)
+
+        # Parse initData to get user ID
+        parsed_init_data = parse_qs(init_data)
+        user_json = parsed_init_data.get('user', [''])[0]
+        if not user_json:
+             return web.json_response({"error": "Invalid user data"}, status=400)
+
+        user_data = json.loads(user_json)
+        user_id = user_data.get('id')
+
+        if not user_id:
+             return web.json_response({"error": "User ID not found"}, status=400)
+
+        # Send image
+        client = multi_clients[0]
+        caption = f"🎬 <b>{title}</b>"
+
+        await client.send_photo(
+            chat_id=user_id,
+            photo=image_url,
+            caption=caption,
+            parse_mode=enums.ParseMode.HTML
+        )
+
+        return web.json_response({"success": True})
+    except Exception as e:
+        logging.error(f"Error sending image: {e}")
+        return web.json_response({"error": str(e)}, status=500)
 
 @routes.get(r"/{path:\S+}", allow_head=True)
 async def stream_handler(request: web.Request):
