@@ -502,6 +502,62 @@
             .overlay-btn.skip-btn { font-size: 2rem; }
         }
 
+        /* iOS Controls */
+        .controls-box {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            height: 56px;
+        }
+
+        .ios-slider-container {
+            flex: 1;
+            height: 100%;
+            background: rgba(120, 120, 128, 0.3);
+            border-radius: 28px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            touch-action: none;
+            transition: transform 0.1s;
+        }
+
+        .ios-slider-container:active {
+            transform: scaleY(0.98);
+        }
+
+        .ios-slider-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #fff;
+            width: 100%;
+            transform-origin: left;
+            pointer-events: none;
+        }
+
+        .ios-slider-icon {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            z-index: 2;
+            font-size: 1.5rem;
+            pointer-events: none;
+        }
+
+        .brightness-icon { color: #fdbf00; }
+        .volume-icon { color: #007aff; }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--dark-bg); }
@@ -558,6 +614,21 @@
                             <i class="fas fa-rotate-right"></i>
                             <span>10</span>
                         </button>
+                    </div>
+                </div>
+
+                <div class="controls-box glass">
+                    <div class="control-row">
+                        <div class="ios-slider-container" id="brightness-slider">
+                            <div class="ios-slider-fill" id="brightness-fill" style="width: 100%;"></div>
+                            <i class="fas fa-sun ios-slider-icon brightness-icon"></i>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <div class="ios-slider-container" id="volume-slider">
+                            <div class="ios-slider-fill" id="volume-fill" style="width: 100%;"></div>
+                            <i class="fas fa-volume-high ios-slider-icon volume-icon"></i>
+                        </div>
                     </div>
                 </div>
 
@@ -753,6 +824,67 @@
                     showOverlay();
                 }
             });
+
+            // iOS Controls Logic
+            function setupIOSSlider(containerId, fillId, callback) {
+                const container = document.getElementById(containerId);
+                const fill = document.getElementById(fillId);
+                let isDragging = false;
+
+                function update(clientX) {
+                    const rect = container.getBoundingClientRect();
+                    let x = clientX - rect.left;
+                    let pct = x / rect.width;
+                    if (pct < 0) pct = 0;
+                    if (pct > 1) pct = 1;
+                    fill.style.width = (pct * 100) + '%';
+                    callback(pct);
+                }
+
+                container.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    update(e.clientX);
+                });
+                container.addEventListener('touchstart', (e) => {
+                    isDragging = true;
+                    update(e.touches[0].clientX);
+                }, { passive: false });
+                window.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        e.preventDefault();
+                        update(e.clientX);
+                    }
+                });
+                window.addEventListener('touchmove', (e) => {
+                    if (isDragging) {
+                        e.preventDefault();
+                        update(e.touches[0].clientX);
+                    }
+                }, { passive: false });
+                window.addEventListener('mouseup', () => isDragging = false);
+                window.addEventListener('touchend', () => isDragging = false);
+            }
+
+            setupIOSSlider('brightness-slider', 'brightness-fill', (val) => {
+                const min = 0.4;
+                const max = 1.2;
+                const bVal = min + (val * (max - min));
+                document.body.style.filter = `brightness(${bVal})`;
+            });
+
+            setupIOSSlider('volume-slider', 'volume-fill', (val) => {
+                player.volume = val;
+            });
+
+            player.on('volumechange', () => {
+                const vol = player.volume;
+                const muted = player.muted;
+                const fill = document.getElementById('volume-fill');
+                if (fill) fill.style.width = (muted ? 0 : vol * 100) + '%';
+            });
+
+            const initialVolFill = document.getElementById('volume-fill');
+            if (initialVolFill) initialVolFill.style.width = (player.volume * 100) + '%';
 
             // Double Tap Logic (Netflix style)
             let lastTap = 0;
