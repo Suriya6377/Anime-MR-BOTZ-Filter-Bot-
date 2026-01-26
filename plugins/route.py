@@ -8,7 +8,7 @@ import secrets
 import time
 import mimetypes
 import json
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 from pyrogram import enums
 from aiohttp.http_exceptions import BadStatusLine
 from Deendayal_botz.Bot import multi_clients, work_loads, DeendayalBot
@@ -231,6 +231,30 @@ async def api_poster_search(request):
         logging.error(f"Search Error: {e}")
         return web.json_response({"error": str(e)}, status=500)
 
+@routes.get("/api/img", allow_head=True)
+async def api_img_proxy(request):
+    path = request.rel_url.query.get("path")
+    size = request.rel_url.query.get("size", "w342")
+    if not path:
+        return web.Response(status=404)
+
+    url = f"https://image.tmdb.org/t/p/{size}{path}"
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status == 200:
+                    response = web.StreamResponse(status=200, headers=resp.headers)
+                    await response.prepare(request)
+                    async for chunk in resp.content.iter_chunked(1024):
+                        await response.write(chunk)
+                    await response.write_eof()
+                    return response
+                else:
+                    return web.Response(status=resp.status)
+    except Exception as e:
+        return web.Response(status=500, text=str(e))
+
 @routes.get("/api/tmdb/images", allow_head=True)
 async def api_tmdb_images(request):
     id = request.rel_url.query.get("id")
@@ -274,6 +298,15 @@ async def send_image_handler(request):
 
         if not init_data or not image_url:
             return web.json_response({"error": "Missing data"}, status=400)
+
+        # Reconstruct TMDB URL if using proxy
+        if "/api/img" in image_url:
+            parsed = urlparse(image_url)
+            params = parse_qs(parsed.query)
+            path = params.get('path', [''])[0]
+            size = params.get('size', ['w342'])[0]
+            if path:
+                image_url = f"https://image.tmdb.org/t/p/{size}{path}"
 
         # Parse initData to get user ID
         parsed_init_data = parse_qs(init_data)
