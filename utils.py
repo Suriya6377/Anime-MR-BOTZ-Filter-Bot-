@@ -1,6 +1,6 @@
 import logging
 from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid
-from info import  LONG_IMDB_DESCRIPTION, MAX_LIST_ELM, SHORTLINK_URL, SHORTLINK_API, IS_SHORTLINK, LOG_CHANNEL, TUTORIAL, GRP_LNK, CHNL_LNK, CUSTOM_FILE_CAPTION, DEENDAYAL_VERIFY_EXPIRE, AUTH_CHANNEL
+from info import  LONG_IMDB_DESCRIPTION, MAX_LIST_ELM, SHORTLINK_URL, SHORTLINK_API, IS_SHORTLINK, LOG_CHANNEL, TUTORIAL, GRP_LNK, CHNL_LNK, CUSTOM_FILE_CAPTION, DEENDAYAL_VERIFY_EXPIRE, AUTH_CHANNEL, BAD_WORDS
 from imdb import Cinemagoer 
 import asyncio
 from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
@@ -28,6 +28,38 @@ logger.setLevel(logging.INFO)
 BTN_URL_REGEX = re.compile(
     r"(\[([^\[]+?)\]\((buttonurl|buttonalert):(?:/{0,2})(.+?)(:same)?\))"
 )
+
+def clean_filename(file_name):
+    if not file_name:
+        return file_name
+
+    # 1. Regex removal of BAD_WORDS (case insensitive)
+    # Sort by length to avoid partial replacements
+    sorted_bad_words = sorted(list(BAD_WORDS), key=len, reverse=True)
+    escaped_bad_words = [re.escape(w) for w in sorted_bad_words]
+    # \b ensures we match whole words, treating dots/etc as boundaries
+    pattern = r'\b(' + '|'.join(escaped_bad_words) + r')\b'
+    cleaned = re.sub(pattern, '', file_name, flags=re.IGNORECASE)
+
+    # 2. Token based removal for prefixes (legacy support + [brackets])
+    # This handles space-separated tokens starting with [, @, www.
+    prefixes = ('[', '@', 'www.')
+    cleaned_words = []
+    for word in cleaned.split():
+        if word.startswith(prefixes):
+            continue
+        cleaned_words.append(word)
+    cleaned = ' '.join(cleaned_words)
+
+    # 3. Cleanup extra separators
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    cleaned = re.sub(r'\.{2,}', '.', cleaned)
+    cleaned = re.sub(r'_\_+', '_', cleaned)
+    # Remove separators left at boundaries due to removal
+    cleaned = re.sub(r'\s+\.', '.', cleaned)
+    cleaned = re.sub(r'\.\s+', '.', cleaned)
+
+    return cleaned.strip(' ._')
 
 imdb = Cinemagoer() 
 TOKENS = {}
@@ -517,36 +549,6 @@ async def get_shortlink(chat_id, link):
         URL = SHORTLINK_URL
         API = SHORTLINK_API
     if URL == "api.shareus.io":
-        # method 1:
-        # https = link.split(":")[0] #splitting https or http from link
-        # if "http" == https: #if https == "http":
-        #     https = "https"
-        #     link = link.replace("http", https) #replacing http to https
-        # conn = http.client.HTTPSConnection("api.shareus.io")
-        # payload = json.dumps({
-        #   "api_key": "4c1YTBacB6PTuwogBiEIFvZN5TI3",
-        #   "monetization": True,
-        #   "destination": link,
-        #   "ad_page": 3,
-        #   "category": "Entertainment",
-        #   "tags": ["trendinglinks"],
-        #   "monetize_with_money": False,
-        #   "price": 0,
-        #   "currency": "INR",
-        #   "purchase_note":""
-        
-        # })
-        # headers = {
-        #   'Keep-Alive': '',
-        #   'Content-Type': 'application/json'
-        # }
-        # conn.request("POST", "/generate_link", payload, headers)
-        # res = conn.getresponse()
-        # data = res.read().decode("utf-8")
-        # parsed_data = json.loads(data)
-        # if parsed_data["status"] == "success":
-        #   return parsed_data["link"]
-    #method 2
         url = f'https://{URL}/easy_api'
         params = {
             "key": API,
@@ -744,7 +746,7 @@ async def send_all(bot, userid, files, ident, chat_id, user_name, query):
     if 'is_shortlink' in settings.keys():
         ENABLE_SHORTLINK = settings['is_shortlink']
     else:
-        await save_group_settings(message.chat.id, 'is_shortlink', False)
+        await save_group_settings(chat_id, 'is_shortlink', False)
         ENABLE_SHORTLINK = False
     try:
         if ENABLE_SHORTLINK:
@@ -797,7 +799,7 @@ async def get_cap(settings, remaining_seconds, files, query, total_results, sear
             cap = IMDB_CAP
             cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n</b>"
             for file in files:
-                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
+                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
         else:
             imdb = await get_poster(search, file=(files[0]).file_name) if settings["imdb"] else None
             if imdb:
@@ -835,17 +837,17 @@ async def get_cap(settings, remaining_seconds, files, query, total_results, sear
                 )
                 cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
                 for file in files:
-                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
+                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
             else:
                 cap = f"<b>📂 ʜᴇʀᴇ ɪ ꜰᴏᴜɴᴅ ꜰᴏʀ ʏᴏᴜʀ sᴇᴀʀᴄʜ\n<code>{search}</code></b>"
                 cap+="\n\n"
                 for file in files:
-                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
+                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
     else:
         cap = f"<b>📂 ʜᴇʀᴇ ɪ ꜰᴏᴜɴᴅ ꜰᴏʀ ʏᴏᴜʀ sᴇᴀʀᴄʜ\n<code>{search}</code></b>"
         cap+="\n\n"
         for file in files:
-            cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
+            cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
     return cap
 
 
