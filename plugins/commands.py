@@ -58,8 +58,6 @@ async def start(client, message):
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
                 ],[
-                    InlineKeyboardButton('👤 Pʀᴏғɪʟᴇ', web_app=WebAppInfo(url=f"{URL}mini"))
-                ],[
                     InlineKeyboardButton('Feature', callback_data="features"),
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
                 ],[
@@ -90,8 +88,6 @@ async def start(client, message):
     if len(message.command) == 2 and message.command[1] in ["subscribe", "error", "okay", "help"]:
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
-                ],[
-                    InlineKeyboardButton('👤 Pʀᴏғɪʟᴇ', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
                     InlineKeyboardButton('Feature', callback_data="features"),
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
