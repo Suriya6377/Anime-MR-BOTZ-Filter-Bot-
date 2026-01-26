@@ -1696,9 +1696,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     InlineKeyboardButton('👤 Pʀᴏғɪʟᴇ', web_app=WebAppInfo(url=f"{URL}mini"))
                 ],[
                     InlineKeyboardButton('Feature', callback_data="features"),
-                    InlineKeyboardButton(' ʜᴇʟᴘ 📢', callback_data='help'),
-                ],[
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
+                ],[
                     InlineKeyboardButton('ᴇᴀʀɴ ᴍᴏɴᴇʏ..💵', callback_data="shortlink_info")
                 ]]
         reply_markup = InlineKeyboardMarkup(buttons)
@@ -2125,7 +2124,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         ],[
             InlineKeyboardButton(' sᴜᴘᴘᴏʀᴛ 🔄', callback_data='channels')
         ],[
-            InlineKeyboardButton('⇋ ʙᴀᴄᴋ ᴛᴏ ʜᴏᴍᴇ ⇋', callback_data='start')
+            InlineKeyboardButton('⇋ ʙᴀᴄᴋ ⇋', callback_data='features')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         await query.message.edit_text(
