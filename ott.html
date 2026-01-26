@@ -601,7 +601,7 @@
 
         function renderMedia(items) {
             const grid = document.getElementById('mediaGrid');
-            const baseImg = "https://image.tmdb.org/t/p/w342";
+            const baseImg = window.location.origin + "/api/img?size=w342&path=";
 
             items.forEach(item => {
                 if(!item.poster_path) return;
@@ -703,7 +703,7 @@
 
             const list = currentImageTab === 'posters' ? currentDetails.posters : currentDetails.backdrops;
             const lang = document.getElementById('langSelect').value;
-            const baseImg = "https://image.tmdb.org/t/p/original";
+            const baseImg = window.location.origin + "/api/img?size=original&path=";
 
             list.forEach(img => {
                 const imgLang = img.iso_639_1 || 'null';
