@@ -58,7 +58,7 @@ async def start(client, message):
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
                 ],[
-                    InlineKeyboardButton('Feature', callback_data="features"),
+                    InlineKeyboardButton('Fᴇᴀᴛᴜʀᴇ 🔮', callback_data="features"),
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
                 ],[
                     InlineKeyboardButton('🎟️ ᴜᴘɢʀᴀᴅᴇ', callback_data="premium_info")
@@ -89,7 +89,7 @@ async def start(client, message):
         buttons = [[
                     InlineKeyboardButton('🔰 ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘ 🔰', url=f'http://telegram.me/{temp.U_NAME}?startgroup=true')
                 ],[
-                    InlineKeyboardButton('Feature', callback_data="features"),
+                    InlineKeyboardButton('Fᴇᴀᴛᴜʀᴇ 🔮', callback_data="features"),
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
                 ],[
                     InlineKeyboardButton('🎟️ ᴜᴘɢʀᴀᴅᴇ', callback_data="premium_info")
@@ -1637,12 +1637,12 @@ async def tmdb_show_callback(client, callback_query):
 @Client.on_callback_query(filters.regex("features"))
 async def features_callback(client, callback_query):
     buttons = [
-        [InlineKeyboardButton('Telegraph ⚡', callback_data='telegraph_info'),
-         InlineKeyboardButton('Font 🎨', callback_data='font_info')],
+        [InlineKeyboardButton('Tᴇʟᴇɢʀᴀᴘʜ ⚡', callback_data='telegraph_info'),
+         InlineKeyboardButton('Fᴏɴᴛ 🎨', callback_data='font_info')],
         [InlineKeyboardButton('TMDB 🎬', web_app=WebAppInfo(url=f"{URL}tmdb")),
-         InlineKeyboardButton('Sticker ID', callback_data='sticker_info')],
-        [InlineKeyboardButton('OTT Poster 📱', web_app=WebAppInfo(url=f"{URL}ott"))],
-        [InlineKeyboardButton('Command', callback_data='help')],
+         InlineKeyboardButton('Sᴛɪᴄᴋᴇʀ ID 🪪', callback_data='sticker_info')],
+        [InlineKeyboardButton('OTT Pᴏsᴛᴇʀ 📱', web_app=WebAppInfo(url=f"{URL}ott")),
+         InlineKeyboardButton('Hᴇʟᴘ', callback_data='help')],
         [InlineKeyboardButton('🔙 Back', callback_data='start')]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
