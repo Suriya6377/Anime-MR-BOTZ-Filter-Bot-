@@ -316,7 +316,7 @@ async def next_page(bot, query):
         remaining_seconds = "{:.2f}".format(time_difference.total_seconds())
         cap = await get_cap(settings, remaining_seconds, files, query, total, search)
         try:
-            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML)
         except MessageNotModified:
             pass
     else:
@@ -524,7 +524,7 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
         remaining_seconds = "{:.2f}".format(time_difference.total_seconds())
         cap = await get_cap(settings, remaining_seconds, files, query, total_results, search)
         try:
-            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML)
         except MessageNotModified:
             pass
     else:
@@ -691,7 +691,7 @@ async def filter_languages_cb_handler(client: Client, query: CallbackQuery):
         remaining_seconds = "{:.2f}".format(time_difference.total_seconds())
         cap = await get_cap(settings, remaining_seconds, files, query, total_results, search)
         try:
-            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML)
         except MessageNotModified:
             pass
     else:
@@ -863,7 +863,7 @@ async def filter_seasons_cb_handler(client: Client, query: CallbackQuery):
         total_results = len(files)
         cap = await get_cap(settings, remaining_seconds, files, query, total_results, search)
         try:
-            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+            await query.message.edit_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML)
         except MessageNotModified:
             pass
     else:
@@ -1696,7 +1696,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     InlineKeyboardButton('Fᴇᴀᴛᴜʀᴇ 🔮', callback_data="features"),
                     InlineKeyboardButton(' ᴀʙᴏᴜᴛ 📖', callback_data='about'),
                 ],[
-                    InlineKeyboardButton('ᴜᴘɢʀᴀᴅᴇ 🎟️', callback_data="premium_info")
+                    InlineKeyboardButton('🎟️ ᴜᴘɢʀᴀᴅᴇ', callback_data="premium_info")
                 ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         current_time = datetime.now(pytz.timezone(TIMEZONE))
@@ -2473,7 +2473,7 @@ async def auto_filter(client, msg, spoll=False):
                 
     if imdb and imdb.get('poster'):
         try:
-            hehe = await message.reply_photo(photo=imdb.get('poster'), caption=cap, reply_markup=InlineKeyboardMarkup(btn))
+            hehe = await message.reply_photo(photo=imdb.get('poster'), caption=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML)
             await m.delete()
             try:
                 if settings['auto_delete']:
@@ -2488,7 +2488,7 @@ async def auto_filter(client, msg, spoll=False):
         except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty):
             pic = imdb.get('poster')
             poster = pic.replace('.jpg', "._V1_UX360.jpg") 
-            hmm = await message.reply_photo(photo=poster, caption=cap, reply_markup=InlineKeyboardMarkup(btn))
+            hmm = await message.reply_photo(photo=poster, caption=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML)
             await m.delete()
             try:
                if settings['auto_delete']:
@@ -2504,7 +2504,7 @@ async def auto_filter(client, msg, spoll=False):
         except Exception as e:
             logger.exception(e)
             m=await message.reply_text("🔎") 
-            fek = await message.reply_text(text=cap, reply_markup=InlineKeyboardMarkup(btn))
+            fek = await message.reply_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML)
             await m.delete()
             try:
                 if settings['auto_delete']:
@@ -2517,7 +2517,7 @@ async def auto_filter(client, msg, spoll=False):
                 await fek.delete()
                 await message.delete()
     else:
-        fuk = await message.reply_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True)
+        fuk = await message.reply_text(text=cap, reply_markup=InlineKeyboardMarkup(btn), disable_web_page_preview=True, parse_mode=enums.ParseMode.HTML)
         await m.delete()
         try:
             if settings['auto_delete']:
@@ -2575,9 +2575,9 @@ async def advantage_spell_chok(client, message):
         ],[
             InlineKeyboardButton("Movie Request Admin", url=OWNER_LNK)
         ]]
-        # k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
-        # await asyncio.sleep(60)
-        # await k.delete()
+        k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
+        await asyncio.sleep(60)
+        await k.delete()
         try:
             await message.delete()
         except:
@@ -2592,9 +2592,9 @@ async def advantage_spell_chok(client, message):
     buttons.append(
         [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
     )
-    # d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
-    # await asyncio.sleep(60)
-    # await d.delete()
+    d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
+    await asyncio.sleep(60)
+    await d.delete()
     try:
         await message.delete()
     except:
