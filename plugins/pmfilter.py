@@ -1643,9 +1643,11 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 chat_id=LOG_CHANNEL,
                 file_id=file_id,
             )
-            fileName = {quote_plus(get_name(log_msg))}
+            fileName = get_name(log_msg)
             lazy_stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
             lazy_download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+            mx_player_link = f"{URL}mx?url={quote_plus(lazy_download)}&filename={quote_plus(get_name(log_msg))}"
+            one_dm_link = f"{URL}1dm?url={quote_plus(lazy_download)}&filename={quote_plus(get_name(log_msg))}"
 
             xo = await query.message.reply_text(f'💘')
             await asyncio.sleep(1)
@@ -1655,15 +1657,23 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 text=f"•• ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ꜰᴏʀ ɪᴅ #{user_id} \n•• ᴜꜱᴇʀɴᴀᴍᴇ : {username} \n\n•• ᖴᎥᒪᗴ Nᗩᗰᗴ : {fileName}",
                 quote=True,
                 disable_web_page_preview=True,
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🚀 Fast Download 🚀", url=lazy_download),  # we download Link
-                                                    InlineKeyboardButton('🖥️ Watch online 🖥️', url=lazy_stream)]])  # web stream Link
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🚀 Fast Download 🚀", url=lazy_download),  # we download Link
+                     InlineKeyboardButton('🖥️ Watch online 🖥️', url=lazy_stream)],
+                    [InlineKeyboardButton("▶️ MX Player", url=mx_player_link)],
+                    [InlineKeyboardButton("⚡ Ultra Fast Download", url=one_dm_link)]
+                ])  # web stream Link
             )
             Deendayal = await query.message.reply_text(
                 text="•• ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ☠︎⚔",
                 quote=True,
                 disable_web_page_preview=True,
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🚀 Fast Download 🚀", url=lazy_download),  # we download Link
-                                                    InlineKeyboardButton('🖥️ Watch online 🖥️', url=lazy_stream)]])  # web stream Link
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🚀 Fast Download 🚀", url=lazy_download),  # we download Link
+                     InlineKeyboardButton('🖥️ Watch online 🖥️', url=lazy_stream)],
+                    [InlineKeyboardButton("▶️ MX Player", url=mx_player_link)],
+                    [InlineKeyboardButton("⚡ Ultra Fast Download", url=one_dm_link)]
+                ])  # web stream Link
             )  
             
             await asyncio.sleep(DELETE_TIME) 
@@ -2575,9 +2585,9 @@ async def advantage_spell_chok(client, message):
         ],[
             InlineKeyboardButton("Movie Request Admin", url=OWNER_LNK)
         ]]
-        # k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
-        # await asyncio.sleep(60)
-        # await k.delete()
+        k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
+        await asyncio.sleep(60)
+        await k.delete()
         try:
             await message.delete()
         except:
@@ -2592,9 +2602,9 @@ async def advantage_spell_chok(client, message):
     buttons.append(
         [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
     )
-    # d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
-    # await asyncio.sleep(60)
-    # await d.delete()
+    d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
+    await asyncio.sleep(60)
+    await d.delete()
     try:
         await message.delete()
     except:

@@ -8,7 +8,7 @@ import secrets
 import time
 import mimetypes
 import json
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, quote_plus
 from pyrogram import enums
 from aiohttp.http_exceptions import BadStatusLine
 from Deendayal_botz.Bot import multi_clients, work_loads, DeendayalBot
@@ -335,6 +335,88 @@ async def send_image_handler(request):
     except Exception as e:
         logging.error(f"Error sending image: {e}")
         return web.json_response({"error": str(e)}, status=500)
+
+@routes.get("/mx")
+async def mx_player_handler(request):
+    try:
+        download_url = request.rel_url.query.get("url")
+        filename = request.rel_url.query.get("filename")
+        if not download_url or not filename:
+            return web.Response(text="Missing parameters", status=400)
+
+        encoded_filename = quote_plus(filename)
+        intent_url = f"intent:{download_url}#Intent;package=com.mxtech.videoplayer.ad;S.title={encoded_filename};end"
+        intent_url_js = json.dumps(intent_url)
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Opening MX Player...</title>
+            <script>
+                window.onload = function() {{
+                    var intentUrl = {intent_url_js};
+                    window.location.href = intentUrl;
+                    setTimeout(function() {{
+                        var link = document.createElement('a');
+                        link.href = intentUrl;
+                        link.innerText = "click here";
+                        document.body.innerHTML = "If MX Player didn't open, ";
+                        document.body.appendChild(link);
+                        document.body.appendChild(document.createTextNode("."));
+                    }}, 1000);
+                }};
+            </script>
+        </head>
+        <body>
+            <p>Opening MX Player...</p>
+        </body>
+        </html>
+        """
+        return web.Response(text=html_content, content_type='text/html')
+    except Exception as e:
+        return web.Response(text=f"Error: {e}", status=500)
+
+@routes.get("/1dm")
+async def one_dm_handler(request):
+    try:
+        download_url = request.rel_url.query.get("url")
+        filename = request.rel_url.query.get("filename")
+        if not download_url or not filename:
+            return web.Response(text="Missing parameters", status=400)
+
+        encoded_filename = quote_plus(filename)
+        intent_url = f"intent:{download_url}#Intent;package=idm.internet.download.manager;S.title={encoded_filename};end"
+        intent_url_js = json.dumps(intent_url)
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Opening 1DM...</title>
+            <script>
+                window.onload = function() {{
+                    var intentUrl = {intent_url_js};
+                    window.location.href = intentUrl;
+                    setTimeout(function() {{
+                        var link = document.createElement('a');
+                        link.href = intentUrl;
+                        link.innerText = "click here";
+                        document.body.innerHTML = "If 1DM didn't open, ";
+                        document.body.appendChild(link);
+                        document.body.appendChild(document.createTextNode("."));
+                    }}, 1000);
+                }};
+            </script>
+        </head>
+        <body>
+            <p>Opening 1DM...</p>
+        </body>
+        </html>
+        """
+        return web.Response(text=html_content, content_type='text/html')
+    except Exception as e:
+        return web.Response(text=f"Error: {e}", status=500)
 
 
 @routes.get(r"/{path:\S+}", allow_head=True)
