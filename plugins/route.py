@@ -71,15 +71,6 @@ async def tmdb_handler(request):
     except Exception as e:
         return web.Response(text=f"Error loading tmdb.html: {e}", status=500)
 
-@routes.get("/ott", allow_head=True)
-async def ott_handler(request):
-    try:
-        file_path = os.path.join(os.getcwd(), 'ott.html')
-        loop = asyncio.get_running_loop()
-        content = await loop.run_in_executor(None, lambda: open(file_path, 'r', encoding='utf-8').read())
-        return web.Response(text=content, content_type='text/html')
-    except Exception as e:
-        return web.Response(text=f"Error loading ott.html: {e}", status=500)
 
 @routes.get("/api/tmdb/search", allow_head=True)
 async def api_tmdb_search(request):

@@ -1645,8 +1645,7 @@ async def features_callback(client, callback_query):
          InlineKeyboardButton('Fᴏɴᴛ 🎨', callback_data='font_info')],
         [InlineKeyboardButton('TMDB 🎬', web_app=WebAppInfo(url=f"{URL}tmdb")),
          InlineKeyboardButton('Sᴛɪᴄᴋᴇʀ ID 🪪', callback_data='sticker_info')],
-        [InlineKeyboardButton('OTT Pᴏsᴛᴇʀ 📱', web_app=WebAppInfo(url=f"{URL}ott")),
-         InlineKeyboardButton('Hᴇʟᴘ', callback_data='help')],
+        [InlineKeyboardButton('Hᴇʟᴘ', callback_data='help')],
         [InlineKeyboardButton('🔙 Back', callback_data='start')]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
