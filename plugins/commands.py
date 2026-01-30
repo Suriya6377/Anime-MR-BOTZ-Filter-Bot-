@@ -621,15 +621,11 @@ async def start(client, message):
             lazy_stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
             lazy_download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
 
-            mx_player_link = f"{URL}mx?url={quote_plus(lazy_download)}&filename={quote_plus(get_name(log_msg))}"
             one_dm_link = f"{URL}1dm?url={quote_plus(lazy_download)}&filename={quote_plus(get_name(log_msg))}"
             btn = [
                 [
                     InlineKeyboardButton('📥 Fast Download', url=lazy_download),
                     InlineKeyboardButton('📺 Watch Online', url=lazy_stream)
-                ],
-                [
-                    InlineKeyboardButton("▶️ MX Player", url=mx_player_link)
                 ],
                 [
                     InlineKeyboardButton("⚡ Ultra Fast Download", url=one_dm_link)
