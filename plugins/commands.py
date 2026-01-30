@@ -1523,6 +1523,7 @@ async def tmdb_search(client, message):
         return await message.reply_text("<b>Please provide a movie name to search.\nExample: /p Avengers</b>")
 
     query = message.text.split(None, 1)[1]
+    await client.send_chat_action(message.chat.id, enums.ChatAction.PLAYING)
     m = await message.reply_text("<b>Searching on TMDB...</b>")
 
     details = await get_movie_detailsx(query)
