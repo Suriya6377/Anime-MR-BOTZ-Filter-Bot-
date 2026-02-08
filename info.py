@@ -297,6 +297,8 @@ BAD_WORDS = {
     "moviesmod",
     "hdhub4u",
     "mkvcinemas",
+    "Vegamovies",
+    "Vegamovies.NL",
     "primefix",
     "join",
     "www",
