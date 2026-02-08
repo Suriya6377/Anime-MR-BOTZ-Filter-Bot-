@@ -43,13 +43,14 @@ def clean_filename(file_name):
 
     # 2. Token based removal for prefixes (legacy support + [brackets])
     # This handles space-separated tokens starting with [, @, www.
-    prefixes = ('[', '@', 'www.')
+    prefixes = ('[', '@', 'www.', '{')
     cleaned_words = []
     for word in cleaned.split():
         if word.startswith(prefixes):
             continue
         cleaned_words.append(word)
     cleaned = ' '.join(cleaned_words)
+    cleaned = re.sub(r'[@{}\[\]]', '', cleaned)
 
     # 3. Cleanup extra separators
     cleaned = re.sub(r'\s+', ' ', cleaned)
