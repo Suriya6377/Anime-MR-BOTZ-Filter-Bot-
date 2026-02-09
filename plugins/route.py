@@ -150,12 +150,38 @@ async def api_poster_search(request):
                     return web.json_response({"error": "TMDB Search Failed"}, status=resp.status)
                 data = await resp.json()
 
-            if not data.get("results"):
-                 return web.json_response({"error": "No results found"}, status=404)
 
             # 2. Get Best Match
+            results = data.get("results", [])
             # Filter for movie or tv only
-            results = [r for r in data["results"] if r.get("media_type") in ["movie", "tv"]]
+            results = [r for r in results if r.get("media_type") in ["movie", "tv"]]
+
+            if not results:
+                match = re.search(r"^(.*)\s(\d{4})$", query)
+                if match:
+                    clean_query = match.group(1).strip()
+                    year = match.group(2)
+
+                    if clean_query:
+                        params["query"] = clean_query
+                        async with session.get(search_url, params=params) as resp:
+                            if resp.status == 200:
+                                data = await resp.json()
+                                new_results = data.get("results", [])
+                                new_results = [r for r in new_results if r.get("media_type") in ["movie", "tv"]]
+
+                                if new_results:
+                                    year_matches = []
+                                    for r in new_results:
+                                        date = r.get("release_date") or r.get("first_air_date")
+                                        if date and date.startswith(year):
+                                            year_matches.append(r)
+
+                                    if year_matches:
+                                        results = year_matches
+                                    else:
+                                        results = new_results
+
             if not results:
                  return web.json_response({"error": "No movie/tv results found"}, status=404)
 
