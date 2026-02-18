@@ -488,7 +488,10 @@ async def start(client, message):
             gtxt = "ɢᴏᴏᴅ ɴɪɢʜᴛ  👋"     
         user_id = message.from_user.id
         if temp.SHORT.get(user_id)==None:
-            return await message.reply_text(text="<b>Please Search Again in Group</b>")
+            btn = [[
+                InlineKeyboardButton("🏃..Bᴀᴄᴋ Tᴏ Gʀᴏᴜᴘ", url=GRP_LNK)
+            ]]
+            return await message.reply_text(text="<b>Please Search Again in Group</b>", reply_markup=InlineKeyboardMarkup(btn))
         else:
             chat_id = temp.SHORT.get(user_id)
         settings = await get_settings(chat_id)
