@@ -17,7 +17,7 @@ from info import *
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto, WebAppInfo
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait, UserIsBlocked, MessageNotModified, PeerIdInvalid
-from utils import get_size, is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, imdb, is_check_admin, clean_filename
+from utils import get_size, is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, imdb, is_check_admin, clean_filename, get_quality_icon
 from fuzzywuzzy import process
 from database.users_chats_db import db
 from database.config_db import mdb
@@ -200,7 +200,7 @@ async def next_page(bot, query):
         btn = [
             [
                 InlineKeyboardButton(
-                    text=f"📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
+                    text=f"{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
                 ),
             ]
             for file in files
@@ -462,7 +462,7 @@ async def filter_qualities_cb_handler(client: Client, query: CallbackQuery):
         btn = [
             [
                 InlineKeyboardButton(
-                    text=f"📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
+                    text=f"{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
                 ),
             ]
             for file in files
@@ -637,7 +637,7 @@ async def filter_languages_cb_handler(client: Client, query: CallbackQuery):
         btn = [
             [
                 InlineKeyboardButton(
-                    text=f"📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
+                    text=f"{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
                 ),
             ]
             for file in files
@@ -850,7 +850,7 @@ async def filter_seasons_cb_handler(client: Client, query: CallbackQuery):
         btn = [
             [
                 InlineKeyboardButton(
-                    text=f"📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
+                    text=f"{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
                 ),
             ]
             for file in files
@@ -998,7 +998,7 @@ async def filter_episodes_cb_handler(client: Client, query: CallbackQuery):
         btn = [
             [
                 InlineKeyboardButton(
-                    text=f"📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
+                    text=f"{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
                 ),
             ]
             for file in files
@@ -2580,7 +2580,7 @@ async def auto_filter(client, msg, spoll=False):
         btn = [
             [
                 InlineKeyboardButton(
-                    text=f"📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
+                    text=f"{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}", callback_data=f'{pre}#{file.file_id}'
                 ),
             ]
             for file in files
@@ -2692,7 +2692,7 @@ async def auto_filter(client, msg, spoll=False):
         if not settings["button"]:
             cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
             for file in files:
-                cap += f"<b>\n<a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'> 📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n</a></b>"
+                cap += f"<b>\n<a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'> {get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}\n</a></b>"
     else:
         if settings["button"]:
             cap = f"<b>📂 ʜᴇʀᴇ ɪ ꜰᴏᴜɴᴅ ꜰᴏʀ ʏᴏᴜʀ sᴇᴀʀᴄʜ\n<code>{search}</code></b>"
@@ -2700,7 +2700,7 @@ async def auto_filter(client, msg, spoll=False):
             cap = f"<b>📂 ʜᴇʀᴇ ɪ ꜰᴏᴜɴᴅ ꜰᴏʀ ʏᴏᴜʀ sᴇᴀʀᴄʜ\n<code>{search}</code></b>"
             cap += "\n\n"
             for file in files:
-                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'> 📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
+                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'> {get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
                 
     if imdb and imdb.get('poster'):
         try:
@@ -2806,9 +2806,9 @@ async def advantage_spell_chok(client, message):
         ],[
             InlineKeyboardButton("Movie Request Admin", url=OWNER_LNK)
         ]]
-        #k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
-        #await asyncio.sleep(60)
-        #await k.delete()
+        k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
+        await asyncio.sleep(60)
+        await k.delete()
         try:
             await message.delete()
         except:
@@ -2823,9 +2823,9 @@ async def advantage_spell_chok(client, message):
     buttons.append(
         [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
     )
-    #d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
-    #await asyncio.sleep(60)
-    #await d.delete()
+    d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
+    await asyncio.sleep(60)
+    await d.delete()
     try:
         await message.delete()
     except:
