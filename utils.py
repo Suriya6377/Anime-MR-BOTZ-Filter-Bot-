@@ -62,6 +62,19 @@ def clean_filename(file_name):
 
     return cleaned.strip(' ._')
 
+def get_quality_icon(filename):
+    if not filename:
+        return "📒"
+    filename = filename.lower()
+    if re.search(r"2160p", filename):
+        return "📘"
+    elif re.search(r"1080p", filename):
+        return "📕"
+    elif re.search(r"720p", filename):
+        return "📗"
+    else:
+        return "📒"
+
 imdb = Cinemagoer() 
 TOKENS = {}
 VERIFIED = {}
@@ -802,7 +815,7 @@ async def get_cap(settings, remaining_seconds, files, query, total_results, sear
             cap = IMDB_CAP
             cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n</b>"
             for file in files:
-                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
+                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
         else:
             imdb = await get_poster(search, file=(files[0]).file_name) if settings["imdb"] else None
             if imdb:
@@ -840,17 +853,17 @@ async def get_cap(settings, remaining_seconds, files, query, total_results, sear
                 )
                 cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
                 for file in files:
-                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
+                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
             else:
                 cap = f"<b>📂 ʜᴇʀᴇ ɪ ꜰᴏᴜɴᴅ ꜰᴏʀ ʏᴏᴜʀ sᴇᴀʀᴄʜ\n<code>{search}</code></b>"
                 cap+="\n\n"
                 for file in files:
-                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
+                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
     else:
         cap = f"<b>📂 ʜᴇʀᴇ ɪ ꜰᴏᴜɴᴅ ꜰᴏʀ ʏᴏᴜʀ sᴇᴀʀᴄʜ\n<code>{search}</code></b>"
         cap+="\n\n"
         for file in files:
-            cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📕 {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
+            cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>{get_quality_icon(file.file_name)} {get_size(file.file_size)} | {clean_filename(file.file_name)}\n\n</a></b>"
     return cap
 
 
