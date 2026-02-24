@@ -22,7 +22,7 @@ from pyrogram.types import *
 from database.ia_filterdb import Media, Media2, get_file_details, unpack_new_file_id, get_bad_files
 from database.users_chats_db import db, delete_all_msg
 from info import CHANNELS, FSUB_PICS, ADMINS, LOG_CHANNEL, PICS, BATCH_FILE_CAPTION, CUSTOM_FILE_CAPTION, PROTECT_CONTENT, CHNL_LNK, REQST_CHANNEL, GRP_LNK, SUPPORT_CHAT_ID, MAX_B_TN, VERIFY, REACTIONS, HOW_TO_VERIFY, PICS, DEENDAYAL_VERIFIED_LOG, SUBSCRIPTION, DEENDAYAL_VERIFY_EXPIRE, STREAM_MODE, EMOJI_MODE, OWNER_LNK, OWNER_UPI_ID, QR_CODE, DELETE_TIME, URL
-from utils import get_settings, get_size, is_subscribed,  save_group_settings, temp, verify_user, check_token, check_verification, get_token, get_shortlink, get_tutorial, get_time, to_bold, clean_filename, get_lang
+from utils import get_settings, get_size, is_subscribed,  save_group_settings, temp, verify_user, check_token, check_verification, get_token, get_shortlink, get_tutorial, get_time, to_bold, clean_filename
 from database.connections_mdb import active_connection
 
 # Set up logging
@@ -581,9 +581,12 @@ async def start(client, message):
     f_caption = files.caption
 
     # Language detection logic
-    language = getattr(files, "language", None)
-    if not language:
-        language = get_lang(title, files.caption)
+    LANGUAGES = ["Hindi", "English", "Tamil", "Telugu", "Malayalam", "Kannada", "Punjabi", "Gujarati", "Bengali"]
+    lang_list = []
+    for lang in LANGUAGES:
+        if lang.lower() in title.lower():
+            lang_list.append(lang)
+    language = ", ".join(lang_list) if lang_list else "Hindi, English"
 
     if CUSTOM_FILE_CAPTION:
         try:

@@ -17,7 +17,7 @@ from info import *
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto, WebAppInfo
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait, UserIsBlocked, MessageNotModified, PeerIdInvalid
-from utils import get_size, is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, imdb, is_check_admin, clean_filename, get_quality_icon, get_lang
+from utils import get_size, is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, imdb, is_check_admin, clean_filename, get_quality_icon
 from fuzzywuzzy import process
 from database.users_chats_db import db
 from database.config_db import mdb
@@ -1322,13 +1322,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
         settings = await get_settings(query.message.chat.id)
         if CUSTOM_FILE_CAPTION:
             try:
-                language = getattr(files, "language", None)
-                if not language:
-                    language = get_lang(title, files.caption)
                 f_caption = CUSTOM_FILE_CAPTION.format(file_name='' if title is None else title,
                                                        file_size='' if size is None else size,
-                                                       file_caption='' if f_caption is None else f_caption,
-                                                       language=language)
+                                                       file_caption='' if f_caption is None else f_caption)
             except Exception as e:
                 logger.exception(e)
             f_caption = f_caption
@@ -1389,13 +1385,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
         settings = await get_settings(query.message.chat.id)
         if CUSTOM_FILE_CAPTION:
             try:
-                language = getattr(files, "language", None)
-                if not language:
-                    language = get_lang(title, files.caption)
                 f_caption = CUSTOM_FILE_CAPTION.format(file_name='' if title is None else title,
                                                        file_size='' if size is None else size,
-                                                       file_caption='' if f_caption is None else f_caption,
-                                                       language=language)
+                                                       file_caption='' if f_caption is None else f_caption)
             except Exception as e:
                 logger.exception(e)
             f_caption = f_caption
@@ -3251,4 +3243,3 @@ async def global_filters(client, message, text=False):
                 break
     else:
         return False
-
