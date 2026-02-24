@@ -21,9 +21,75 @@ import aiohttp
 from shortzy import Shortzy
 import http.client
 import json
+from pymediainfo import MediaInfo
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+CAPTION_LANGUAGES = {
+    "hin": "Hindi", "hindi": "Hindi",
+    "tam": "Tamil", "tamil": "Tamil",
+    "kan": "Kannada", "kannada": "Kannada",
+    "tel": "Telugu", "telugu": "Telugu",
+    "mal": "Malayalam", "malayalam": "Malayalam",
+    "eng": "English", "english": "English",
+    "pun": "Punjabi", "punjabi": "Punjabi",
+    "ben": "Bengali", "bengali": "Bengali",
+    "mar": "Marathi", "marathi": "Marathi",
+    "guj": "Gujarati", "gujarati": "Gujarati",
+    "urd": "Urdu", "urdu": "Urdu",
+    "bangla": "Bangla",
+    "kor": "Korean", "korean": "Korean",
+    "jpn": "Japanese", "japanese": "Japanese",
+}
+
+def get_lang(filename, caption=None):
+    if not filename:
+        return "N/A"
+    text_to_search = filename.lower()
+    if caption:
+        text_to_search += " " + caption.lower()
+    lang_keys = set()
+    for k in CAPTION_LANGUAGES:
+        # Check for word boundary or separators like dot, underscore, dash, brackets
+        if re.search(r"(?:^|[\W_])" + re.escape(k) + r"(?:$|[\W_])", text_to_search):
+            lang_keys.add(k)
+            
+    language = ", ".join(sorted({CAPTION_LANGUAGES[k] for k in lang_keys})) if lang_keys else "N/A"
+    return language
+
+async def extract_audio_languages(client, file_id):
+    temp_file = f"temp_{random.randint(1000,9999)}_{file_id}.dat"
+    try:
+        # Download approx 5-10MB. Pyrogram chunks are usually 1MB.
+        i = 0
+        async for chunk in client.stream_media(file_id, limit=5):
+            with open(temp_file, 'ab') as f:
+                f.write(chunk)
+            i += 1
+            if i >= 5: break
+            
+        media_info = MediaInfo.parse(temp_file)
+        langs = set()
+        for track in media_info.tracks:
+            if track.track_type == "Audio":
+                lang = getattr(track, 'language', None)
+                if lang:
+                    langs.add(lang)
+            if track.track_type == "Text":
+                lang = getattr(track, 'language', None)
+                if lang:
+                    langs.add(lang)
+        
+        if langs:
+            return ", ".join(sorted(list(langs)))
+        return None
+    except Exception as e:
+        logger.error(f"Metadata error for {file_id}: {e}")
+        return None
+    finally:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
 
 BTN_URL_REGEX = re.compile(
     r"(\[([^\[]+?)\]\((buttonurl|buttonalert):(?:/{0,2})(.+?)(:same)?\))"

@@ -284,13 +284,14 @@ Powered By ⚜️ : <a href="https://t.me/Deendayal_dhakadd">Deendayal Dhakad</a
 🫥  <b><code>{filename}</code> ⿻ </b> | ⭐ <b><a href={poster_url}></a><a href={imdb_url}>ɪᴍᴅʙ ɪɴғᴏ</a></b>
 
 🎭 ɢᴇɴʀᴇs : <b>{genres}</b>
-🌐 ᴏᴛᴛ    : <b>{ott}</b>
+{ott_line}
+📽 ғᴏʀᴍᴀᴛ : <b>{quality}</b>
 
-📽 ǫᴜᴀʟɪᴛʏ : <b>{quality}</b>
 🔊 ᴀᴜᴅɪᴏ   : <b>{language}</b>
 
 🎞 ʀᴀᴛɪɴɢ  : <b>{rating}</b>
 <b>{episodes}</b>
+
 <blockquote><b>〽️ Powered by <a href="https://t.me/Nobita_Files_Filter_bot">Deendayal Dhakad</a></b></blockquote>
 <b>🕒 {date} | {time}</b>
 """
