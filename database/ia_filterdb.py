@@ -9,7 +9,7 @@ from umongo import Instance, Document, fields
 from motor.motor_asyncio import AsyncIOMotorClient
 from marshmallow.exceptions import ValidationError
 from info import CAPTION_LANGUAGES, DATABASE_URI, DATABASE_URI2, DATABASE_NAME, COLLECTION_NAME, USE_CAPTION_FILTER, MAX_B_TN, OWNERID
-from utils import get_settings, save_group_settings, temp
+from utils import get_settings, save_group_settings, temp, get_lang, extract_audio_languages
 from database.users_chats_db import add_name
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import datetime
@@ -42,6 +42,7 @@ class Media(Document):
     file_type = fields.StrField(allow_none=True)
     mime_type = fields.StrField(allow_none=True)
     caption = fields.StrField(allow_none=True)
+    language = fields.StrField(allow_none=True)
 
     class Meta:
         indexes = ('$file_name', )
@@ -56,6 +57,7 @@ class Media2(Document):
     file_type = fields.StrField(allow_none=True)
     mime_type = fields.StrField(allow_none=True)
     caption = fields.StrField(allow_none=True)
+    language = fields.StrField(allow_none=True)
 
     class Meta:
         indexes = ('$file_name', )
@@ -81,6 +83,17 @@ async def save_file(bot, media):
         if await Media.count_documents({'file_id': file_id}, limit=1):
             logger.warning(f'{file_name} is already saved in primary database!')
             return False, 0
+    # Attempt to get language from file metadata (partial download)
+    meta_lang = await extract_audio_languages(bot, file_id)
+    # Fallback/Combine with filename/caption parsing
+    caption = media.caption.html if hasattr(media.caption, 'html') else media.caption
+    filename_lang = get_lang(file_name, caption)
+    
+    if meta_lang:
+        final_lang = meta_lang
+    else:
+        final_lang = filename_lang
+
     file = saveMedia(
         file_id=file_id,
         file_ref=file_ref,
@@ -88,7 +101,8 @@ async def save_file(bot, media):
         file_size=media.file_size,
         file_type=media.file_type,
         mime_type=media.mime_type,
-        caption=media.caption.html if media.caption else None,
+        caption=caption,
+        language=final_lang
     )
   except ValidationError:
     logger.exception('Error occurred while saving file in database')
