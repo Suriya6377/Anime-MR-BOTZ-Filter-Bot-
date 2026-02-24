@@ -17,7 +17,7 @@ from info import *
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto, WebAppInfo
 from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait, UserIsBlocked, MessageNotModified, PeerIdInvalid
-from utils import get_size, is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, imdb, is_check_admin, clean_filename, get_quality_icon
+from utils import get_size, is_subscribed, get_poster, search_gagala, temp, get_settings, save_group_settings, get_shortlink, get_tutorial, send_all, get_cap, imdb, is_check_admin, clean_filename, get_quality_icon, get_lang
 from fuzzywuzzy import process
 from database.users_chats_db import db
 from database.config_db import mdb
@@ -1322,9 +1322,13 @@ async def cb_handler(client: Client, query: CallbackQuery):
         settings = await get_settings(query.message.chat.id)
         if CUSTOM_FILE_CAPTION:
             try:
+                language = getattr(files, "language", None)
+                if not language:
+                    language = get_lang(title, files.caption)
                 f_caption = CUSTOM_FILE_CAPTION.format(file_name='' if title is None else title,
                                                        file_size='' if size is None else size,
-                                                       file_caption='' if f_caption is None else f_caption)
+                                                       file_caption='' if f_caption is None else f_caption,
+                                                       language=language)
             except Exception as e:
                 logger.exception(e)
             f_caption = f_caption
@@ -1385,9 +1389,13 @@ async def cb_handler(client: Client, query: CallbackQuery):
         settings = await get_settings(query.message.chat.id)
         if CUSTOM_FILE_CAPTION:
             try:
+                language = getattr(files, "language", None)
+                if not language:
+                    language = get_lang(title, files.caption)
                 f_caption = CUSTOM_FILE_CAPTION.format(file_name='' if title is None else title,
                                                        file_size='' if size is None else size,
-                                                       file_caption='' if f_caption is None else f_caption)
+                                                       file_caption='' if f_caption is None else f_caption,
+                                                       language=language)
             except Exception as e:
                 logger.exception(e)
             f_caption = f_caption
@@ -2806,9 +2814,9 @@ async def advantage_spell_chok(client, message):
         ],[
             InlineKeyboardButton("Movie Request Admin", url=OWNER_LNK)
         ]]
-        #k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
-        #await asyncio.sleep(60)
-        #await k.delete()
+        k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
+        await asyncio.sleep(60)
+        await k.delete()
         try:
             await message.delete()
         except:
@@ -2823,9 +2831,9 @@ async def advantage_spell_chok(client, message):
     buttons.append(
         [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
     )
-    #d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
-    #await asyncio.sleep(60)
-    #await d.delete()
+    d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
+    await asyncio.sleep(60)
+    await d.delete()
     try:
         await message.delete()
     except:
@@ -3243,3 +3251,4 @@ async def global_filters(client, message, text=False):
                 break
     else:
         return False
+
