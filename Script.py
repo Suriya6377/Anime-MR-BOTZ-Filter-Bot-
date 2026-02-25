@@ -11,10 +11,10 @@ class script(object):
     ABOUT_TXT = """<b>╭────[ ᴍʏ ᴅᴇᴛᴀɪʟs ]────⍟
 ├⍟ Mʏ Nᴀᴍᴇ : <a href=https://t.me/{}>{}</a>
 ├⍟ Dᴇᴠᴇʟᴏᴘᴇʀ : <a href={}>ᴏᴡɴᴇʀ</a> 
-├⍟ Lɪʙʀᴀʀʏ : <a href='https://docs.pyrogram.org/'>ᴘʏʀᴏɢʀᴀᴍ</a>
-├⍟ Lᴀɴɢᴜᴀɢᴇ : <a href='https://www.python.org/download/releases/3.0/'>ᴘʏᴛʜᴏɴ 𝟹</a> 
-├⍟ Dᴀᴛᴀʙᴀsᴇ : <a href='https://www.mongodb.com/'>ᴍᴏɴɢᴏ ᴅʙ</a> 
-├⍟ Bᴏᴛ Sᴇʀᴠᴇʀ : <a href='https://heroku.com/'>ʜᴇʀᴏᴋᴜ</a> 
+├⍟ Lɪʙʀᴀʀʏ : ᴘʏʀᴏɢʀᴀᴍ
+├⍟ Lᴀɴɢᴜᴀɢᴇ : ᴘʏᴛʜᴏɴ 𝟹 
+├⍟ Dᴀᴛᴀʙᴀsᴇ : ᴍᴏɴɢᴏ ᴅʙ
+├⍟ Bᴏᴛ Sᴇʀᴠᴇʀ : ᴋᴏʏᴇʙ 
 ├⍟ Bᴜɪʟᴅ Sᴛᴀᴛᴜs : ᴠ4.8 [ ꜱᴛᴀʙʟᴇ ]
 ╰───────────────⍟</b>"""
         
@@ -274,8 +274,6 @@ Mᴇꜱꜱᴀɢᴇ : <b>{}</b>"""
 
 <b>⚙️ sɪᴢᴇ : {file_size}</b>
 
-<b>🔊 ᴀᴜᴅɪᴏ : {language}</b>
-
 Powered By ⚜️ : <a href="https://t.me/Deendayal_dhakadd">Deendayal Dhakad</a>
 """
 
@@ -284,13 +282,13 @@ Powered By ⚜️ : <a href="https://t.me/Deendayal_dhakadd">Deendayal Dhakad</a
 🫥  <b><code>{filename}</code> ⿻ </b> | ⭐ <b><a href={poster_url}></a><a href={imdb_url}>ɪᴍᴅʙ ɪɴғᴏ</a></b>
 
 🎭 ɢᴇɴʀᴇs : <b>{genres}</b>
-🌐 ᴏᴛᴛ    : <b>{ott}</b>
-
+{ott_line}
 📽 ǫᴜᴀʟɪᴛʏ : <b>{quality}</b>
+
 🔊 ᴀᴜᴅɪᴏ   : <b>{language}</b>
 
 🎞 ʀᴀᴛɪɴɢ  : <b>{rating}</b>
-<b>{episodes}</b>
+<b>{episodes}</b>/n
 <blockquote><b>〽️ Powered by <a href="https://t.me/Nobita_Files_Filter_bot">Deendayal Dhakad</a></b></blockquote>
 <b>🕒 {date} | {time}</b>
 """
