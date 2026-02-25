@@ -48,6 +48,7 @@ CAPTION_LANGUAGES = {
     "ben": "Bengali", "bengali": "Bengali",
     "mar": "Marathi", "marathi": "Marathi",
     "guj": "Gujarati", "gujarati": "Gujarati",
+    "bangla": "Bangla",
     "urd": "Urdu", "urdu": "Urdu",
     "kor": "Korean", "korean": "Korean",
     "jpn": "Japanese", "japanese": "Japanese",
@@ -257,27 +258,24 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
     if not movie_doc:
         details = {}
         error_tmdb = False
+        imdb_details = await get_movie_details(base_name) or {}
+        tmdb_details = {}
 
         if TMDB_POSTER:
-            details = await get_movie_detailsx(base_name)
-            if details.get("error") or not details:
+            tmdb_details = await get_movie_detailsx(base_name)
+            if tmdb_details.get("error") or not tmdb_details:
                 error_tmdb = True
-                logger.info("TMDB error or not found, switching to IMDB")
-                if IMDB_POSTER:
-                     details = await get_movie_details(base_name) or {}
-                     # Smart Retry: Use IMDb corrected title to try TMDB again
-                     if error_tmdb and details and details.get("title"):
-                         corrected_title = details["title"]
-                         if corrected_title.lower() != base_name.lower():
-                             logger.info(f"Retrying TMDB with corrected title: {corrected_title}")
-                             tmdb_retry = await get_movie_detailsx(corrected_title)
-                             if tmdb_retry and not tmdb_retry.get("error"):
-                                 details = tmdb_retry
-                                 error_tmdb = False
-        elif IMDB_POSTER:
-            details = await get_movie_details(base_name) or {}
+                # Smart Retry: Use IMDb corrected title to try TMDB again
+                if imdb_details and imdb_details.get("title"):
+                    corrected_title = imdb_details["title"]
+                    if corrected_title.lower() != base_name.lower():
+                        logger.info(f"Retrying TMDB with corrected title: {corrected_title}")
+                        tmdb_retry = await get_movie_detailsx(corrected_title)
+                        if tmdb_retry and not tmdb_retry.get("error"):
+                            tmdb_details = tmdb_retry
+                            error_tmdb = False
 
-        raw_genres = details.get("genres", "N/A")
+        raw_genres = imdb_details.get("genres", "N/A")
         if isinstance(raw_genres, str):
             genre_list = [g.strip() for g in raw_genres.split(",")]
             genres = ", ".join(g for g in genre_list if g in STANDARD_GENRES) or "N/A"
@@ -286,18 +284,22 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
 
         poster_url = None
         if LANDSCAPE_POSTER:
-             poster_url = details.get("backdrop_url")
+             poster_url = tmdb_details.get("backdrop_url")
+             if not poster_url:
+                 poster_url = imdb_details.get("backdrop_url")
         if not poster_url:
-             poster_url = details.get("poster_url")
+             poster_url = tmdb_details.get("poster_url")
+             if not poster_url:
+                 poster_url = imdb_details.get("poster_url")
 
         movie_doc = {
             "_id": base_name,
             "files": [file_data],
             "poster_url": poster_url,
             "genres": genres,
-            "rating": details.get("rating", "N/A"),
-            "imdb_url": details.get("url", "") if not (TMDB_POSTER and not error_tmdb) else details.get("tmdb_url"),
-            "year": media_info["year"] or details.get("year"),
+            "rating": imdb_details.get("rating", "N/A"),
+            "imdb_url": imdb_details.get("url", "") or tmdb_details.get("tmdb_url", ""),
+            "year": media_info["year"] or imdb_details.get("year"),
             "tag": media_info["tag"],
             "ott_platform": media_info["ott_platform"],
             "message_id": None,
@@ -475,6 +477,7 @@ def generate_movie_message(movie_doc, base_name):
     quality_str = ", ".join(sorted(all_qualities)) if all_qualities else "N/A"
     language_str = ", ".join(sorted(all_languages)) if all_languages else "N/A"
     ott_str = ", ".join(sorted(all_ott_platforms)) if all_ott_platforms else "N/A"
+    ott_line = f"🌐 ᴏᴛᴛ    : <b>{ott_str}</b>\n" if ott_str != "N/A" and ott_str else ""
 
     ist = pytz.timezone('Asia/Kolkata')
     now = datetime.now(ist)
@@ -487,7 +490,7 @@ def generate_movie_message(movie_doc, base_name):
         filename=base_name,
         tag=primary_tag,
         genres=genres,
-        ott=ott_str,
+        ott_line=ott_line,
         quality=quality_str,
         language=language_str,
         episodes=epi_block,
