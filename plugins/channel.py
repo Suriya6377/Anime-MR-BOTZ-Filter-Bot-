@@ -61,7 +61,7 @@ OTT_PLATFORMS = {
     "hotstar": "Disney+ Hotstar", "zee5": "Zee5",
     "jio": "JioHotstar", "jhs": "JioHotstar",
     "aha": "Aha", "hbo": "HBO Max", "paramount": "Paramount+",
-    "apple": "Apple TV+", "hoichoi": "Hoichoi", "sunnxt": "Sun NXT", "viki": "Viki"
+    "ATVP": "Apple TV+", "hoichoi": "Hoichoi", "sunnxt": "Sun NXT", "viki": "Viki"
 }
 
 STANDARD_GENRES = {
