@@ -38,20 +38,20 @@ IGNORE_WORDS = {
 
 # Constants
 CAPTION_LANGUAGES = {
-    "hin": "Hindi", "hindi": "Hindi",
-    "tam": "Tamil", "tamil": "Tamil",
-    "kan": "Kannada", "kannada": "Kannada",
-    "tel": "Telugu", "telugu": "Telugu",
-    "mal": "Malayalam", "malayalam": "Malayalam",
-    "eng": "English", "english": "English",
-    "pun": "Punjabi", "punjabi": "Punjabi",
-    "ben": "Bengali", "bengali": "Bengali",
-    "mar": "Marathi", "marathi": "Marathi",
-    "guj": "Gujarati", "gujarati": "Gujarati",
+    "hindi": "Hindi", "hindi": "Hindi",
+    "tamil": "Tamil", "tamil": "Tamil",
+    "kannada": "Kannada", "kannada": "Kannada",
+    "telugu": "Telugu", "telugu": "Telugu",
+    "malayalam": "Malayalam", "malayalam": "Malayalam",
+    "english": "English", "english": "English",
+    "punjabi": "Punjabi", "punjabi": "Punjabi",
+    "bengali": "Bengali", "bengali": "Bengali",
+    "marathi": "Marathi", "marathi": "Marathi",
+    "gujarati": "Gujarati", "gujarati": "Gujarati",
     "bangla": "Bangla",
-    "urd": "Urdu", "urdu": "Urdu",
-    "kor": "Korean", "korean": "Korean",
-    "jpn": "Japanese", "japanese": "Japanese",
+    "urdu": "Urdu", "urdu": "Urdu",
+    "korean": "Korean", "korean": "Korean",
+    "Japanese": "Japanese", "japanese": "Japanese",
 }
 
 OTT_PLATFORMS = {
