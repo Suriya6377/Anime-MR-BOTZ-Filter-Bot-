@@ -276,11 +276,18 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
                             error_tmdb = False
 
         raw_genres = imdb_details.get("genres", "N/A")
+        if raw_genres in ("N/A", "", None, []) and tmdb_details and tmdb_details.get("genres"):
+            raw_genres = tmdb_details.get("genres")
+
         if isinstance(raw_genres, str):
             genre_list = [g.strip() for g in raw_genres.split(",")]
             genres = ", ".join(g for g in genre_list if g in STANDARD_GENRES) or "N/A"
         else:
             genres = ", ".join(g for g in raw_genres if g in STANDARD_GENRES) or "N/A"
+
+        rating = imdb_details.get("rating", "N/A")
+        if rating in ("N/A", "", None) and tmdb_details and tmdb_details.get("rating"):
+            rating = str(tmdb_details.get("rating"))
 
         poster_url = None
         if LANDSCAPE_POSTER:
@@ -297,7 +304,7 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
             "files": [file_data],
             "poster_url": poster_url,
             "genres": genres,
-            "rating": imdb_details.get("rating", "N/A"),
+            "rating": rating,
             "imdb_url": imdb_details.get("url", "") or tmdb_details.get("tmdb_url", ""),
             "year": media_info["year"] or imdb_details.get("year"),
             "tag": media_info["tag"],
