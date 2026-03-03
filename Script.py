@@ -287,9 +287,9 @@ Powered By ⚜️ : <a href="https://t.me/Deendayal_dhakadd">Deendayal Dhakad</a
 
 🔊 ᴀᴜᴅɪᴏ   : <b>{language}</b>
 
-🎞 ʀᴀᴛɪɴɢ  : <b>{rating}</b>
+🎞 ʀᴀᴛɪɴɢ  : <b>{rating}</b>{duration}
 <b>{episodes}</b>
-<blockquote><b>〽️ Powered by <a href="https://t.me/Nobita_Files_Filter_bot">ᗪᗴᗴᑎᗪᗩYᗩᒪ ᗪᕼᗩKᗩᗪ</a></b></blockquote>
+<blockquote><b>〽️ Powered by <a href="https://t.me/Nobita_Files_Filter_bot">Deendayal Dhakad</a></b></blockquote>
 <b>🕒 {date} | {time}</b>
 """
 
