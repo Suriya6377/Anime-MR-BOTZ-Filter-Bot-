@@ -289,6 +289,10 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
         if rating in ("N/A", "", None) and tmdb_details and tmdb_details.get("rating"):
             rating = str(tmdb_details.get("rating"))
 
+        runtime = imdb_details.get("runtime")
+        if not runtime and tmdb_details and tmdb_details.get("runtime"):
+            runtime = str(tmdb_details.get("runtime"))
+
         poster_url = None
         if LANDSCAPE_POSTER:
              poster_url = tmdb_details.get("backdrop_url")
@@ -305,6 +309,7 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
             "poster_url": poster_url,
             "genres": genres,
             "rating": rating,
+            "runtime": runtime,
             "imdb_url": imdb_details.get("url", "") or tmdb_details.get("tmdb_url", ""),
             "year": media_info["year"] or imdb_details.get("year"),
             "tag": media_info["tag"],
@@ -486,6 +491,42 @@ def generate_movie_message(movie_doc, base_name):
     ott_str = ", ".join(sorted(all_ott_platforms)) if all_ott_platforms else "N/A"
     ott_line = f"🌐 ᴏᴛᴛ    : <b>{ott_str}</b>\n" if ott_str != "N/A" and ott_str else ""
 
+    duration_str = ""
+    raw_runtime = movie_doc.get("runtime")
+    if raw_runtime:
+        if isinstance(raw_runtime, list):
+            raw_runtime = raw_runtime[0]
+
+        raw_str = str(raw_runtime).lower()
+        total_mins = 0
+
+        match = re.search(r'(?:(\d+)\s*h\b\s*)?(?:(\d+)\s*m(?:in)?\b)?', raw_str)
+        if match and (match.group(1) or match.group(2)):
+            h = int(match.group(1)) if match.group(1) else 0
+            m = int(match.group(2)) if match.group(2) else 0
+            total_mins = h * 60 + m
+
+        if not total_mins:
+            digits = ''.join(filter(str.isdigit, raw_str))
+            if digits:
+                total_mins = int(digits)
+
+        if total_mins:
+            if total_mins > 59:
+                hours = total_mins // 60
+                minutes = total_mins % 60
+                if minutes > 0:
+                    formatted = f"{hours}h {minutes}m"
+                else:
+                    formatted = f"{hours}h"
+            else:
+                formatted = f"{total_mins} min"
+
+            if primary_tag == "#SERIES":
+                duration_str = f"\n⏱ ᴅᴜʀᴀᴛɪᴏɴ : <b>{formatted}/ep (Avg)</b>"
+            else:
+                duration_str = f"\n⏱ ᴅᴜʀᴀᴛɪᴏɴ : <b>{formatted}</b>"
+
     ist = pytz.timezone('Asia/Kolkata')
     now = datetime.now(ist)
     date_str = now.strftime("%d %b %Y")
@@ -502,6 +543,7 @@ def generate_movie_message(movie_doc, base_name):
         language=language_str,
         episodes=epi_block,
         rating=movie_doc.get("rating", "N/A"),
+        duration=duration_str,
         search_link=temp.B_LINK,
         date=date_str,
         time=time_str
