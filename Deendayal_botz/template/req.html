@@ -317,11 +317,18 @@
             margin-bottom: 1.5rem;
             display: flex;
             flex-direction: column;
-            align-items: center; /* Center align items (Badge & Filename) */
+            align-items: flex-start; /* Left align items */
             gap: 1rem;
             position: relative;
             overflow: hidden;
-            text-align: center;
+            text-align: left;
+        }
+
+        /* Inner container to hold the left-aligned text */
+        .file-details-wrapper {
+            display: flex;
+            justify-content: flex-start; /* Left align items */
+            width: 100%;
         }
 
         /* Buttons Box */
@@ -365,6 +372,14 @@
             width: 100%;
         }
 
+        .status-badge-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -391,6 +406,33 @@
             animation: pulse 2s infinite;
         }
 
+        .quality-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(188, 19, 254, 0.1);
+            border: 1px solid rgba(188, 19, 254, 0.3);
+            color: var(--neon-purple);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: lipLap 1.5s infinite alternate;
+        }
+
+        @keyframes lipLap {
+            0% {
+                box-shadow: 0 0 5px var(--neon-purple);
+                opacity: 0.8;
+            }
+            100% {
+                box-shadow: 0 0 15px var(--neon-purple), 0 0 20px var(--neon-purple);
+                opacity: 1;
+            }
+        }
+
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -408,6 +450,34 @@
             line-height: 1.1;
             word-break: break-word;
             text-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .file-details {
+            font-size: 0.95rem;
+            text-align: left;
+            padding: 0;
+            width: 100%;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 0.8rem;
+            gap: 0.3rem;
+        }
+
+        .detail-row .label {
+                font-weight: 700;
+                color: var(--neon-pink);
+                flex-shrink: 0;
+            }
+
+        .detail-row .value {
+            color: var(--text-secondary);
+            font-weight: 400;
+            text-transform: uppercase;
+            white-space: normal;
+            word-break: break-word;
         }
 
         /* Action Buttons Grid */
@@ -562,8 +632,30 @@
                 </div>
 
                 <div class="filename-box glass">
-                    <div class="status-badge">Now Streaming</div>
-                    <div class="file-name">{{file_name}}</div>
+                    <div class="status-badge-container">
+                        <div class="status-badge">Now Streaming</div>
+                        {% if parsed_quality %}
+                        <div class="quality-badge">{{ parsed_quality }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="file-details-wrapper">
+                        <div class="file-details">
+                            <div class="detail-row"><span class="label">NAME :</span> <span class="value">{{ parsed_name }}</span></div>
+                            <div class="detail-row"><span class="label">SIZE :</span> <span class="value">{{ file_size }}</span></div>
+                            {% if parsed_season %}
+                            <div class="detail-row"><span class="label">SEASON :</span> <span class="value">{{ parsed_season }}</span></div>
+                            {% endif %}
+                            {% if parsed_episode %}
+                            <div class="detail-row"><span class="label">EPISODE :</span> <span class="value">{{ parsed_episode }}</span></div>
+                            {% endif %}
+                            {% if parsed_year %}
+                            <div class="detail-row"><span class="label">YEAR :</span> <span class="value">{{ parsed_year }}</span></div>
+                            {% endif %}
+                            {% if parsed_language %}
+                            <div class="detail-row"><span class="label">LANGUAGE :</span> <span class="value">{{ parsed_language }}</span></div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
                 <div class="buttons-box glass">
