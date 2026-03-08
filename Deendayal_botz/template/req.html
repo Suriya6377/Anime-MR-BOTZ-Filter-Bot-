@@ -310,6 +310,101 @@
              color: #fff; /* Keep text white on hover */
         }
 
+        /* Only show Lock and Brightness in Fullscreen */
+        #video-wrapper:not(.is-fullscreen) .lock-btn,
+        #video-wrapper:not(.is-fullscreen) .brightness-container {
+            display: none !important;
+        }
+
+        /* Locked State */
+        #video-wrapper.video-locked .overlay-btn:not(.lock-btn) {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        #video-wrapper.video-locked .lock-btn {
+            left: 50% !important;
+            bottom: 30px !important;
+            transform: translateX(-50%) !important;
+            font-size: 1.5rem !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        #video-wrapper.video-locked .plyr__controls {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Brightness Slider Specifics */
+        .brightness-container {
+            z-index: 25;
+            transition: opacity 0.3s;
+            position: absolute;
+            left: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brightness-slider-wrapper {
+            position: relative;
+            width: 8px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 4px;
+        }
+
+        #brightness-slider {
+            -webkit-appearance: none;
+            width: 120px;
+            height: 8px;
+            background: transparent;
+            position: absolute;
+            top: 56px;
+            left: -56px;
+            transform: rotate(-90deg);
+            cursor: pointer;
+            margin: 0;
+            --val: 50%;
+        }
+
+        #brightness-slider::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(to right, #007aff 0%, #007aff var(--val), transparent var(--val), transparent 100%);
+            border-radius: 4px;
+        }
+
+        #brightness-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #007aff;
+            margin-top: -4px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
+        #brightness-slider::-moz-range-track {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(to right, #007aff 0%, #007aff var(--val), transparent var(--val), transparent 100%);
+            border-radius: 4px;
+        }
+
+        #brightness-slider::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #007aff;
+            border: none;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+
         /* Filename Box */
         .filename-box {
             padding: 1.5rem;
@@ -603,15 +698,28 @@
 
                     <!-- Custom Netflix Style Overlay -->
                     <div class="custom-overlay active" id="custom-controls">
+                        <!-- Brightness Slider -->
+                        <div class="brightness-container overlay-btn">
+                            <i class="fas fa-sun" style="font-size: 1.2rem;"></i>
+                            <div class="brightness-slider-wrapper">
+                                <input type="range" id="brightness-slider" min="0" max="2" step="0.05" value="1">
+                            </div>
+                        </div>
+
                         <!-- Resize / Aspect Ratio Button -->
                         <button class="overlay-btn resize-btn" id="resize-btn" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem;">
                             <i class="fas fa-expand"></i>
                         </button>
 
                         <!-- Netflix Style Speed Button -->
-                        <button class="overlay-btn speed-btn" id="speed-btn" style="position: absolute; bottom: 50px; left: 30px; font-size: 1rem; font-weight: 700; flex-direction: row; gap: 5px;">
+                        <button class="overlay-btn speed-btn" id="speed-btn" style="position: absolute; bottom: 50px; left: 50px; font-size: 1.2rem; font-weight: 700; flex-direction: row; gap: 5px;">
                             <i class="fas fa-gauge-high"></i>
                             <span>1x</span>
+                        </button>
+
+                        <!-- Lock UI Button -->
+                        <button class="overlay-btn lock-btn" id="lock-btn" style="position: absolute; top: 50%; right: 50px; transform: translateY(-50%); font-size: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <i class="fas fa-unlock-keyhole"></i>
                         </button>
 
                         <button class="overlay-btn skip-btn" id="rewind-btn">
@@ -737,8 +845,13 @@
             const resizeIcon = resizeBtn.querySelector('i');
             const speedBtn = document.getElementById('speed-btn');
             const speedSpan = speedBtn.querySelector('span');
+            const lockBtn = document.getElementById('lock-btn');
+            const lockIcon = lockBtn.querySelector('i');
+            const brightnessSlider = document.getElementById('brightness-slider');
+            const plyrElem = document.querySelector('.plyr'); // Target plyr container for brightness
 
             let overlayTimeout;
+            let isLocked = false;
 
             // Toggle Overlay Visibility
             function showOverlay() {
@@ -790,17 +903,20 @@
             // Custom Button Actions
             centerBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (isLocked) return;
                 player.togglePlay();
             });
 
             rewindBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (isLocked) return;
                 player.rewind(10);
                 showOverlay(); // Reset timer
             });
 
             forwardBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (isLocked) return;
                 player.forward(10);
                 showOverlay(); // Reset timer
             });
@@ -808,14 +924,49 @@
             // Fullscreen Toggle Logic (Netflix Style)
             resizeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (isLocked) return;
                 player.fullscreen.toggle();
                 showOverlay(); // Reset timer
+            });
+
+            // Lock Feature Logic
+            lockBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isLocked = !isLocked;
+
+                if (isLocked) {
+                    videoWrapper.classList.add('video-locked');
+                    lockIcon.classList.remove('fa-unlock-keyhole');
+                    lockIcon.classList.add('fa-lock');
+                } else {
+                    videoWrapper.classList.remove('video-locked');
+                    lockIcon.classList.remove('fa-lock');
+                    lockIcon.classList.add('fa-unlock-keyhole');
+                }
+                showOverlay(); // Reset timer to hide unlock button
+            });
+
+            // Brightness Feature Logic
+            brightnessSlider.addEventListener('input', (e) => {
+                e.stopPropagation();
+                if (isLocked) return;
+                const brightnessValue = e.target.value;
+
+                // Update slider fill percentage
+                const percentage = (brightnessValue / 2) * 100;
+                brightnessSlider.style.setProperty('--val', `${percentage}%`);
+
+                if (plyrElem) {
+                    plyrElem.style.filter = `brightness(${brightnessValue})`;
+                }
+                showOverlay();
             });
 
             // Handle Fullscreen Events for Auto-Rotate and Icon changes
             player.on('enterfullscreen', event => {
                 resizeIcon.classList.remove('fa-expand');
                 resizeIcon.classList.add('fa-compress');
+                videoWrapper.classList.add('is-fullscreen');
 
                 // Auto-rotate to landscape on mobile devices
                 if (screen.orientation && screen.orientation.lock) {
@@ -828,6 +979,15 @@
             player.on('exitfullscreen', event => {
                 resizeIcon.classList.remove('fa-compress');
                 resizeIcon.classList.add('fa-expand');
+                videoWrapper.classList.remove('is-fullscreen');
+
+                // Automatically unlock the player when exiting fullscreen
+                if (isLocked) {
+                    isLocked = false;
+                    videoWrapper.classList.remove('video-locked');
+                    lockIcon.classList.remove('fa-lock');
+                    lockIcon.classList.add('fa-unlock-keyhole');
+                }
 
                 // Unlock orientation
                 if (screen.orientation && screen.orientation.unlock) {
@@ -841,6 +1001,7 @@
 
             speedBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                if (isLocked) return;
                 currentSpeedIndex = (currentSpeedIndex + 1) % speeds.length;
                 const newSpeed = speeds[currentSpeedIndex];
 
@@ -871,6 +1032,7 @@
                 if (tapLength < 500 && tapLength > 0) {
                     // Double Tap Detected
                     e.preventDefault();
+                    if (isLocked) return;
 
                     // Determine side
                     const rect = videoWrapper.getBoundingClientRect();
