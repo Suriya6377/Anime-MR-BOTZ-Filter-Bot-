@@ -73,7 +73,7 @@ async def start(client, message):
         m=await message.reply_text("⏳")
         await asyncio.sleep(0.4)
         await m.delete()        
-        await message.reply_photo(
+        await message.reply_photo(has_spoiler=True,
             photo=random.choice(PICS),
             caption=script.START_TXT.format(message.from_user.mention, gtxt, temp.U_NAME, temp.B_NAME),
             reply_markup=reply_markup,
@@ -102,7 +102,7 @@ async def start(client, message):
         m=await message.reply_text("⏳")
         await asyncio.sleep(0.4)
         await m.delete()        
-        await message.reply_photo(
+        await message.reply_photo(has_spoiler=True,
             photo=random.choice(PICS),
             caption=script.START_TXT.format(message.from_user.mention, gtxt, temp.U_NAME, temp.B_NAME),
             reply_markup=reply_markup,
@@ -155,7 +155,7 @@ async def start(client, message):
                     InlineKeyboardButton('❌ ᴄʟᴏꜱᴇ ❌', callback_data='close_data')
                   ]]
         reply_markup = InlineKeyboardMarkup(buttons)
-        await message.reply_photo(
+        await message.reply_photo(has_spoiler=True,
             photo=(SUBSCRIPTION),
             caption=script.PREPLANS_TXT.format(message.from_user.mention, OWNER_UPI_ID, QR_CODE),
             reply_markup=reply_markup,
@@ -186,7 +186,7 @@ async def start(client, message):
                     "कृपया *Join Updates Channels* बटन पर क्लिक करें और सुनिश्चित करें कि आपने *सभी चैनल्स* को जॉइन किया है।\n"
                     "इसके बाद, कृपया फिर से प्रयास करें।"
                 )
-                await message.reply_photo(
+                await message.reply_photo(has_spoiler=True,
                     photo=random.choice(FSUB_PICS),
                     caption=caption,
                     reply_markup=reply_markup,
@@ -325,7 +325,7 @@ async def start(client, message):
             ],[
                 InlineKeyboardButton("🏃..Bᴀᴄᴋ Tᴏ Gʀᴏᴜᴘ", url=GRP_LNK)
             ]]
-            await message.reply_photo(
+            await message.reply_photo(has_spoiler=True,
                 photo="https://graph.org/file/6928de1539e2e80e47fb8.jpg",
                 caption=f"<b>Hey {message.from_user.mention},\n\n𝑌𝑜𝑢 𝐴𝑟𝑒 𝑆𝑢𝑐𝑐𝑒𝑠𝑠𝑓𝑢𝑙 𝑉𝑒𝑟𝑖𝑓𝑖𝑒𝑑 ! 𝑁𝑜𝑤 𝑌𝑜𝑢 𝐻𝑎𝑣𝑒 𝑈𝑛𝑙𝑖𝑚𝑖𝑡𝑒𝑑 𝐴𝑐𝑐𝑒𝑠𝑠 𝐹𝑜𝑟 {DEENDAYAL_VERIFY_EXPIRE} HOURS.\n\n<blockquote>आप सफलतापूर्वक सत्यापित हो गए हैं अब आप {DEENDAYAL_VERIFY_EXPIRE}  घंटे  तक 𝐷𝑖𝑟𝑒𝑐𝑡 𝑀𝑜𝑣𝑖𝑒 की 𝐹𝑖𝑙𝑒𝑠 प्राप्त कर सकते हैं।</blockquote></b>",
                 reply_markup=InlineKeyboardMarkup(btn)
@@ -1704,7 +1704,7 @@ async def web_app_data_handler(client, message):
         if data.get('action') == 'download_image':
             url = data.get('url')
             title = data.get('title')
-            await message.reply_photo(
+            await message.reply_photo(has_spoiler=True,
                 photo=url,
                 caption=f"<b>🎬 {title}</b>",
                 parse_mode=enums.ParseMode.HTML

@@ -341,7 +341,7 @@ async def send_image_handler(request):
         client = multi_clients[0]
         caption = f"🎬 <b>{title}</b>"
 
-        await client.send_photo(
+        await client.send_photo(has_spoiler=True,
             chat_id=user_id,
             photo=image_url,
             caption=caption,

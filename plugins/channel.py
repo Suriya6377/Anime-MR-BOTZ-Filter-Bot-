@@ -359,12 +359,11 @@ async def send_movie_update(bot, base_name):
 
             if movie_doc.get("poster_url") and not LINK_PREVIEW:
                 resized_poster = await fetch_image(movie_doc["poster_url"], size=(2560, 1440) if LANDSCAPE_POSTER else (853, 1280))
-                msg = await bot.send_photo(
+                msg = await bot.send_photo(has_spoiler=True,
                     chat_id=MOVIE_UPDATE_CHANNEL,
                     photo=resized_poster,
                     caption=text,
                     reply_markup=buttons,
-                    has_spoiler=True,
                     parse_mode=enums.ParseMode.HTML
                 )
                 is_photo = True
