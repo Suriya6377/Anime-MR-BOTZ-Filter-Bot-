@@ -722,6 +722,13 @@
 
             // Custom Overlay Logic
             const overlay = document.getElementById('custom-controls');
+
+            // Move custom overlay inside Plyr wrapper so it shows in fullscreen
+            const plyrContainer = document.querySelector('.plyr');
+            if (plyrContainer && overlay) {
+                plyrContainer.appendChild(overlay);
+            }
+
             const videoWrapper = document.getElementById('video-wrapper');
             const centerBtn = document.getElementById('center-play-btn');
             const centerIcon = centerBtn.querySelector('i');
@@ -799,24 +806,34 @@
                 showOverlay(); // Reset timer
             });
 
-            // Aspect Ratio Toggle Logic
+            // Fullscreen Toggle Logic (Netflix Style)
             resizeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const video = document.querySelector('.video-container video');
-
-                // Toggle between cover (Fill) and contain (Fit)
-                if (getComputedStyle(video).objectFit === 'contain') {
-                    video.style.objectFit = 'cover';
-                    // Now it is Covering (Zoomed in/Filled), so icon should allow Zoom Out (Compress)
-                    resizeIcon.classList.remove('fa-expand');
-                    resizeIcon.classList.add('fa-compress');
-                } else {
-                    video.style.objectFit = 'contain';
-                    // Now it is Fitting (Zoomed out), so icon should allow Zoom In (Expand)
-                    resizeIcon.classList.remove('fa-compress');
-                    resizeIcon.classList.add('fa-expand');
-                }
+                player.fullscreen.toggle();
                 showOverlay(); // Reset timer
+            });
+
+            // Handle Fullscreen Events for Auto-Rotate and Icon changes
+            player.on('enterfullscreen', event => {
+                resizeIcon.classList.remove('fa-expand');
+                resizeIcon.classList.add('fa-compress');
+
+                // Auto-rotate to landscape on mobile devices
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(function(error) {
+                        console.log("Orientation lock failed:", error);
+                    });
+                }
+            });
+
+            player.on('exitfullscreen', event => {
+                resizeIcon.classList.remove('fa-compress');
+                resizeIcon.classList.add('fa-expand');
+
+                // Unlock orientation
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
             });
 
             // Playback Speed Logic (Netflix Style: Cycle)
