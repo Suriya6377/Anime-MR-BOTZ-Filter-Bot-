@@ -325,6 +325,8 @@
         #video-wrapper.video-locked .lock-btn {
             left: 50% !important;
             bottom: 30px !important;
+            top: auto !important;
+            right: auto !important;
             transform: translateX(-50%) !important;
             font-size: 1.5rem !important;
             opacity: 1 !important;
@@ -369,7 +371,7 @@
             transform: rotate(-90deg);
             cursor: pointer;
             margin: 0;
-            --val: 50%;
+            --val: 90%;
         }
 
         #brightness-slider::-webkit-slider-runnable-track {
@@ -702,7 +704,7 @@
                         <div class="brightness-container overlay-btn">
                             <i class="fas fa-sun" style="font-size: 1.2rem;"></i>
                             <div class="brightness-slider-wrapper">
-                                <input type="range" id="brightness-slider" min="0" max="2" step="0.05" value="1">
+                                <input type="range" id="brightness-slider" min="0" max="100" step="1" value="90">
                             </div>
                         </div>
 
@@ -848,7 +850,7 @@
             const lockBtn = document.getElementById('lock-btn');
             const lockIcon = lockBtn.querySelector('i');
             const brightnessSlider = document.getElementById('brightness-slider');
-            const plyrElem = document.querySelector('.plyr'); // Target plyr container for brightness
+            const videoElem = document.getElementById('player');
 
             let overlayTimeout;
             let isLocked = false;
@@ -953,11 +955,12 @@
                 const brightnessValue = e.target.value;
 
                 // Update slider fill percentage
-                const percentage = (brightnessValue / 2) * 100;
-                brightnessSlider.style.setProperty('--val', `${percentage}%`);
+                brightnessSlider.style.setProperty('--val', `${brightnessValue}%`);
 
-                if (plyrElem) {
-                    plyrElem.style.filter = `brightness(${brightnessValue})`;
+                if (videoElem) {
+                    // Map 0-100 to 0.1 - 1.1 brightness range
+                    const cssBrightness = 0.1 + (brightnessValue / 100);
+                    videoElem.style.filter = `brightness(${cssBrightness})`;
                 }
                 showOverlay();
             });
