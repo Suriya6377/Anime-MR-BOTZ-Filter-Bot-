@@ -62,6 +62,10 @@
             "description": "mongoDB URI. Get this value from https://www.mongodb.com.",
             "required": true
         },
+        "STREAM_DATABASE": {
+            "description": "mongoDB URI for storing Stream/File to Link mappings. Get this value from https://www.mongodb.com.",
+            "required": false
+        },
         "DATABASE_NAME": {
             "description": "Name of the database in mongoDB.",
             "required": false
