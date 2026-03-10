@@ -2531,6 +2531,16 @@ async def auto_filter(client, msg, spoll=False):
         if len(message.text) < 100:
             search = message.text         
             search = search.lower()
+
+            # Normalize "Season X" to "s0X" and "Episode Y" to "e0Y"
+            search = re.sub(r'(?i)season\s*0*(\d+)', lambda m: f"s{int(m.group(1)):02d}", search)
+            search = re.sub(r'(?i)episode\s*0*(\d+)', lambda m: f"e{int(m.group(1)):02d}", search)
+
+            # Match "EXXX" directly or standalone "E XXX" when not preceded by season explicitly
+            search = re.sub(r'(?i)\b(e)\s*0*(\d+)\b', lambda m: f"e{int(m.group(2)):02d}", search)
+
+            search = re.sub(r'(?i)(s\d+)\s+(e\d+)', r'\1\2', search)
+
             await client.send_chat_action(message.chat.id, enums.ChatAction.PLAYING)
             m=await message.reply_text(f'**🔎 sᴇᴀʀᴄʜɪɴɢ** `{search}`')
             find = search.split(" ")
@@ -2541,8 +2551,8 @@ async def auto_filter(client, msg, spoll=False):
                     continue
                 else:
                     search = search + x + " "
-            #search = re.sub(r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|bro|bruh|broh|helo|that|find|dubbed|link|venum|iruka|pannunga|pannungga|anuppunga|anupunga|anuppungga|anupungga|film|undo|kitti|kitty|tharu|kittumo|kittum|movie|any(one)|with\ssubtitle(s)?)", "", search, flags=re.IGNORECASE)
-            #search = re.sub(r"\s+", " ", search).strip()
+            search = re.sub(r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|bro|bruh|broh|helo|that|find|dubbed|link|venum|iruka|pannunga|pannungga|anuppunga|anupunga|anuppungga|anupungga|film|undo|kitti|kitty|tharu|kittumo|kittum|any(one)|with\ssubtitle(s)?)\b", "", search, flags=re.IGNORECASE)
+            search = re.sub(r"\s+", " ", search).strip()
             search = search.replace("-", " ")
             search = search.replace(":","")
             files, offset, total_results = await get_search_results(message.chat.id ,search, offset=0, filter=True)
