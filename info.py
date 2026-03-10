@@ -63,6 +63,7 @@ OWNER_UPI_ID = environ.get('OWNER_UPI_ID', 'https://t.me/Deendayal_Rolex7')
 # ============================
 DATABASE_URI = environ.get('DATABASE_URI', "")
 DATABASE_URI2 = environ.get('DATABASE_URI2', "")
+STREAM_DATABASE = environ.get('STREAM_DATABASE', "mongodb+srv://onemongodb_db_user:fIeTRLqivxrrtoiV@cluster0.rpyeonn.mongodb.net/?appName=Cluster0")
 DATABASE_NAME = environ.get('DATABASE_NAME', "cluster")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'Deendayal_files')
 
