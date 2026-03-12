@@ -104,6 +104,18 @@ PREMIUM_USER = [int(user) if id_pattern.search(user) else user for user in envir
 # ============================
 # Miscellaneous Configuration
 # ============================
+SET_STREAM_CHNL = environ.get('SET_STREAM_CHNL', '')
+if SET_STREAM_CHNL:
+    try:
+        SET_STREAM_CHNL = [int(x) for x in SET_STREAM_CHNL.split()]
+    except ValueError:
+        SET_STREAM_CHNL = []
+else:
+    SET_STREAM_CHNL = []
+    
+# ============================
+# Miscellaneous Configuration
+# ============================
 NO_RESULTS_MSG = bool(environ.get("NO_RESULTS_MSG", True))  # True if you want no results messages in Log Channel
 MAX_B_TN = environ.get("MAX_B_TN", "5")
 MAX_BTN = is_enabled((environ.get('MAX_BTN', "True")), True)
