@@ -278,8 +278,30 @@ class Database:
     async def update_movie_update_status(self, bot_id, enable):
         await self.update_bot_setting(bot_id, 'MOVIE_UPDATE', enable)
 
+    async def stream_channel_status(self, bot_id):
+        from info import SET_STREAM_CHNL
+        channels = await self.get_bot_setting(bot_id, 'SET_STREAM_CHNL', SET_STREAM_CHNL)
+        if not isinstance(channels, list):
+            channels = [channels] if channels else []
+        return channels
+
+    async def add_stream_channel_status(self, bot_id, channel_id):
+        channels = await self.stream_channel_status(bot_id)
+        if channel_id not in channels:
+            channels.append(channel_id)
+            await self.update_bot_setting(bot_id, 'SET_STREAM_CHNL', channels)
+            return True
+        return False
+
+    async def remove_stream_channel_status(self, bot_id, channel_id):
+        channels = await self.stream_channel_status(bot_id)
+        if channel_id in channels:
+            channels.remove(channel_id)
+            await self.update_bot_setting(bot_id, 'SET_STREAM_CHNL', channels)
+            return True
+        return False
+
         
 db = Database(DATABASE_URI, DATABASE_NAME)
 db2 = Database(DATABASE_URI2, DATABASE_NAME)
-
 
