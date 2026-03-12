@@ -623,9 +623,6 @@ async def start(client, message):
                 [
                     InlineKeyboardButton('📥 Fast Download', url=lazy_download),
                     InlineKeyboardButton('📺 Watch Online', url=lazy_stream)
-                ],
-                [
-                    InlineKeyboardButton("⚡ Ultra Fast Download", url=one_dm_link)
                 ]
             ]
             await log_msg.edit_caption(

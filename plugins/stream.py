@@ -83,8 +83,7 @@ async def stream_command_handler(client: Client, message: Message):
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🚀 Fast Download 🚀", url=lazy_download),
-                 InlineKeyboardButton('🖥️ Watch online 🖥️', url=lazy_stream)],
-                [InlineKeyboardButton("⚡ Ultra Fast Download", url=one_dm_link)]
+                 InlineKeyboardButton('🖥️ Watch online 🖥️', url=lazy_stream)]
             ])
         )
 
