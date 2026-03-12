@@ -1640,7 +1640,8 @@ async def features_callback(client, callback_query):
          InlineKeyboardButton('Fᴏɴᴛ 🎨', callback_data='font_info')],
         [InlineKeyboardButton('TMDB 🎬', web_app=WebAppInfo(url=f"{URL}tmdb")),
          InlineKeyboardButton('Sᴛɪᴄᴋᴇʀ ID 🪪', callback_data='sticker_info')],
-        [InlineKeyboardButton('Hᴇʟᴘ', callback_data='help')],
+        [InlineKeyboardButton('Sᴛʀᴇᴀᴍ 🖥️', callback_data='stream_info'),
+         InlineKeyboardButton('Hᴇʟᴘ', callback_data='help')],
         [InlineKeyboardButton('🔙 Back', callback_data='start')]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
@@ -1658,6 +1659,16 @@ async def tmdb_info_callback(client, callback_query):
         await callback_query.message.edit_caption(script.TMDB_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
     else:
         await callback_query.message.edit_text(script.TMDB_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("stream_info"))
+async def stream_info_callback(client, callback_query):
+    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='features')]]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    if callback_query.message.photo:
+        await callback_query.message.edit_caption(script.STREAM_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    else:
+        await callback_query.message.edit_text(script.STREAM_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
     await callback_query.answer()
 
 @Client.on_callback_query(filters.regex("telegraph_info"))
