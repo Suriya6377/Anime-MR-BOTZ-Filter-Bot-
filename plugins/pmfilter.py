@@ -80,9 +80,12 @@ async def give_filter(client, message):
     if message.chat.id != SUPPORT_CHAT_ID:
         user = message.from_user
         if user and not await is_check_admin(client, message.chat.id, user.id):
-            if re.search(r'[@#]|https?://|t\.me|telegram\.me', message.text, re.IGNORECASE) or message.text.startswith('/'):
-                await message.delete()
-                return message.stop_propagation()
+            if re.search(r'[@#]|https?://|t\.me|telegram\.me|(?:\s|^)/[a-zA-Z0-9_]+', message.text, re.IGNORECASE) or message.text.startswith('/'):
+                try:
+                    await message.delete()
+                except pyrogram.errors.MessageDeleteForbidden:
+                    pass
+                raise pyrogram.StopPropagation
 
     if EMOJI_MODE:
         try:
@@ -2778,9 +2781,9 @@ async def advantage_spell_chok(client, message):
         ],[
             InlineKeyboardButton("Movie Request Admin", url=OWNER_LNK)
         ]]
-        #k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
-        #await asyncio.sleep(60)
-        #await k.delete()
+        k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
+        await asyncio.sleep(60)
+        await k.delete()
         try:
             await message.delete()
         except:
@@ -2795,9 +2798,9 @@ async def advantage_spell_chok(client, message):
     buttons.append(
         [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
     )
-    #d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
-    #await asyncio.sleep(60)
-    #await d.delete()
+    d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
+    await asyncio.sleep(60)
+    await d.delete()
     try:
         await message.delete()
     except:
