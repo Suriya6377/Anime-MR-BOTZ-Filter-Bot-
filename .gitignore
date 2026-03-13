@@ -6,3 +6,5 @@ venv/
 node_modules/
 __pycache__/
 Deendayal_search.session
+TELEGRAM BOT.LOG
+venv2/
