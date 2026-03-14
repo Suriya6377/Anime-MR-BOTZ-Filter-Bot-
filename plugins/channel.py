@@ -124,15 +124,15 @@ def extract_season_episode(filename: str) -> Tuple[Optional[int], Optional[str]]
             return season, ep
     return None, None
 
-def schedule_update(bot, base_name, delay=5):
-    if handle := pending_updates.get(base_name):
+def schedule_update(bot, group_id, delay=5):
+    if handle := pending_updates.get(group_id):
         if not handle.cancelled():
             handle.cancel()
 
     loop = asyncio.get_event_loop()
-    pending_updates[base_name] = loop.call_later(
+    pending_updates[group_id] = loop.call_later(
         delay,
-        lambda: asyncio.create_task(update_movie_message(bot, base_name))
+        lambda: asyncio.create_task(update_movie_message(bot, group_id))
     )
 
 def extract_media_info(filename: str, caption: str):
@@ -228,19 +228,24 @@ async def process_and_send_update(bot, filename, caption):
         base_name = media_info["base_name"]
         processed = media_info["processed"]
 
-        lock = locks[base_name]
+        group_id = base_name
+        if media_info.get("season"):
+            season_num = media_info["season"]
+            group_id = f"{base_name} S{int(season_num):02d}"
+
+        lock = locks[group_id]
         async with lock:
-            await _process_with_lock(bot, filename, caption, media_info, base_name, processed)
+            await _process_with_lock(bot, filename, caption, media_info, base_name, processed, group_id)
     except PyMongoError as e:
         logger.error("Database error: %s", e)
     except Exception as e:
         logger.exception("Processing failed: %s", e)
 
-async def _process_with_lock(bot, filename, caption, media_info, base_name, processed):
+async def _process_with_lock(bot, filename, caption, media_info, base_name, processed, group_id):
     if not hasattr(db, 'movie_updates'):
         db.movie_updates = db.db.movie_updates
 
-    movie_doc = await db.movie_updates.find_one({"_id": base_name})
+    movie_doc = await db.movie_updates.find_one({"_id": group_id})
     global error_tmdb
     error_tmdb=False
     file_data = {
@@ -304,7 +309,7 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
                  poster_url = imdb_details.get("poster_url")
 
         movie_doc = {
-            "_id": base_name,
+            "_id": group_id,
             "files": [file_data],
             "poster_url": poster_url,
             "genres": genres,
@@ -319,41 +324,41 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
         }
         try:
             await db.movie_updates.insert_one(movie_doc)
-            await send_movie_update(bot, base_name)
-            movie_doc = await db.movie_updates.find_one({"_id": base_name})
+            await send_movie_update(bot, group_id)
+            movie_doc = await db.movie_updates.find_one({"_id": group_id})
         except DuplicateKeyError:
-            movie_doc = await db.movie_updates.find_one({"_id": base_name})
+            movie_doc = await db.movie_updates.find_one({"_id": group_id})
             if movie_doc:
                 if not any(f["filename"] == filename for f in movie_doc["files"]):
                     await db.movie_updates.update_one(
-                        {"_id": base_name},
+                        {"_id": group_id},
                         {"$push": {"files": file_data}}
                     )
                     movie_doc["files"].append(file_data)
-                schedule_update(bot, base_name)
+                schedule_update(bot, group_id)
     else:
         if not any(f["filename"] == filename for f in movie_doc["files"]):
             await db.movie_updates.update_one(
-                {"_id": base_name},
+                {"_id": group_id},
                 {"$push": {"files": file_data}}
             )
             movie_doc["files"].append(file_data)
-        schedule_update(bot, base_name)
+        schedule_update(bot, group_id)
 
-async def send_movie_update(bot, base_name):
+async def send_movie_update(bot, group_id):
     max_retries = 3
     base_delay = 5
     for attempt in range(max_retries):
         try:
-            movie_doc = await db.movie_updates.find_one({"_id": base_name})
+            movie_doc = await db.movie_updates.find_one({"_id": group_id})
             if not movie_doc:
                 return None
 
-            text = generate_movie_message(movie_doc, base_name)
+            text = generate_movie_message(movie_doc, group_id)
             buttons = InlineKeyboardMarkup([[
                 InlineKeyboardButton(
                     '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                    url=f"https://t.me/Deendayal_Hindi_Movies?start=getfile-{base_name.replace(' ', '-')}"
+                    url=f"https://t.me/Deendayal_Hindi_Movies?start=getfile-{group_id.replace(' ', '-')}"
                 )
             ]])
 
@@ -380,7 +385,7 @@ async def send_movie_update(bot, base_name):
                 is_photo = False
 
             await db.movie_updates.update_one(
-                {"_id": base_name},
+                {"_id": group_id},
                 {"$set": {"message_id": msg.id, "is_photo": is_photo}}
             )
             return msg
@@ -392,17 +397,17 @@ async def send_movie_update(bot, base_name):
             break
     return None
 
-async def update_movie_message(bot, base_name):
+async def update_movie_message(bot, group_id):
     try:
-        movie_doc = await db.movie_updates.find_one({"_id": base_name})
+        movie_doc = await db.movie_updates.find_one({"_id": group_id})
         if not movie_doc:
             return
 
-        text = generate_movie_message(movie_doc, base_name)
+        text = generate_movie_message(movie_doc, group_id)
         buttons = InlineKeyboardMarkup([[
             InlineKeyboardButton(
                 '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                url=f"https://t.me/Deendayal_Hindi_Movies?start=getfile-{base_name.replace(' ', '-')}"
+                url=f"https://t.me/Deendayal_Hindi_Movies?start=getfile-{group_id.replace(' ', '-')}"
             )
         ]])
 
@@ -410,7 +415,7 @@ async def update_movie_message(bot, base_name):
         is_photo = movie_doc.get("is_photo", False)
 
         if not message_id:
-            await send_movie_update(bot, base_name)
+            await send_movie_update(bot, group_id)
             return
 
         try:
@@ -420,11 +425,11 @@ async def update_movie_message(bot, base_name):
             )
         except Exception:
             pass
-        await send_movie_update(bot, base_name)
+        await send_movie_update(bot, group_id)
     except Exception as e:
         logger.error(f"Failed to update movie message: {e}")
 
-def generate_movie_message(movie_doc, base_name):
+def generate_movie_message(movie_doc, group_id):
     all_qualities = set()
     all_languages = set()
     all_ott_platforms = set()
@@ -534,7 +539,7 @@ def generate_movie_message(movie_doc, base_name):
     return script.MOVIE_UPDATE_NOTIFY_TXT.format(
         poster_url=movie_doc.get("poster_url", ""),
         imdb_url=movie_doc.get("imdb_url", ""),
-        filename=base_name,
+        filename=group_id,
         tag=primary_tag,
         genres=genres,
         ott_line=ott_line,
