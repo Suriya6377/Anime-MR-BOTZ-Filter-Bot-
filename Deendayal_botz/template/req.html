@@ -740,6 +740,16 @@
                     </div>
                 </div>
 
+
+
+                <!-- Top Row: Total Views -->
+                        <div style="display: flex; justify-content: center; width: 100%;">
+                            <div class="views-badge" style="display: inline-flex; align-items: center; gap: 0.8rem; background: linear-gradient(135deg, rgba(188, 19, 254, 0.2), rgba(0, 243, 255, 0.2)); border: 2px solid rgba(255, 0, 127, 0.5); color: #fff; padding: 0.6rem 1.8rem; border-radius: 30px; font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 15px rgba(255, 0, 127, 0.4), inset 0 0 10px rgba(188, 19, 254, 0.2); margin-top: 1rem; margin-bottom: 2rem; backdrop-filter: blur(10px);">
+                                👀 {{ view_count }} VIEWS
+                            </div>
+                        </div>
+
+
                 <div class="filename-box glass">
                     <div class="status-badge-container">
                         <div class="status-badge">Now Streaming</div>
@@ -747,9 +757,13 @@
                         <div class="quality-badge">{{ parsed_quality }}</div>
                         {% endif %}
                     </div>
+
+
                     <div class="file-details-wrapper">
                         <div class="file-details">
                             <div class="detail-row"><span class="label">NAME :</span> <span class="value">{{ parsed_name }}</span></div>
+
+
                             <div class="detail-row"><span class="label">SIZE :</span> <span class="value">{{ file_size }}</span></div>
                             {% if parsed_season %}
                             <div class="detail-row"><span class="label">SEASON :</span> <span class="value">{{ parsed_season }}</span></div>
@@ -804,6 +818,40 @@
                     </div>
                 </div>
             </section>
+        <!-- Trending Section -->
+            {% if top_trending %}
+            <section class="trending-section" style="width: 100%; max-width: 800px; margin: 2rem auto; padding: 0 20px;">
+                <div class="trending-container" style="background: linear-gradient(rgba(10, 10, 18, 0.8), rgba(10, 10, 18, 0.8)) padding-box, linear-gradient(45deg, var(--neon-pink), var(--neon-purple), var(--neon-cyan)) border-box; backdrop-filter: blur(15px); border: 2px solid transparent; border-radius: 20px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.2rem; box-shadow: 0 0 30px rgba(188, 19, 254, 0.2), inset 0 0 20px rgba(255, 0, 127, 0.1);">
+
+                    <!-- Trending Header -->
+                    <div class="trending-header" style="display: flex; align-items: center; justify-content: center; gap: 0.8rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                        <i class="fas fa-fire" style="color: #ff5e00; font-size: 1.5rem; text-shadow: 0 0 10px #ff5e00;"></i>
+                        <h3 style="background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 1.3rem; font-weight: 800; text-transform: uppercase; letter-spacing: 3px; margin: 0; text-shadow: 0 0 20px rgba(255, 0, 127, 0.3);">TRENDING NOW</h3>
+                    </div>
+
+                    <!-- Trending Items -->
+                    <div class="trending-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for item in top_trending %}
+                        <a href="/stream?id={{ item.file_id }}" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 25px rgba(0, 243, 255, 0.3)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                            <div class="trending-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.2rem; background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(10px); border-radius: 12px; {% if loop.index == 1 %}border: 1.5px solid rgba(255, 0, 127, 0.8); box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);{% elif loop.index <= 3 %}border: 1px solid rgba(188, 19, 254, 0.5); box-shadow: 0 4px 15px rgba(188, 19, 254, 0.2);{% else %}border: 1px solid rgba(0, 243, 255, 0.3); box-shadow: 0 2px 10px rgba(0, 243, 255, 0.1);{% endif %}">
+
+                                <div class="trending-name" style="color: #fff; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.8rem; flex: 1; padding-right: 1rem; overflow: hidden;">
+                                    <span style="{% if loop.index == 1 %}color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink); font-size: 1.2rem;{% else %}color: var(--neon-cyan);{% endif %} font-weight: 900; min-width: 24px; text-align: center;">#{{ loop.index }}</span>
+                                    <i class="fas {% if loop.index == 1 %}fa-crown{% else %}fa-play{% endif %}" style="{% if loop.index == 1 %}color: #ffd700; text-shadow: 0 0 10px #ffd700;{% else %}color: var(--neon-purple);{% endif %} font-size: 0.9rem;"></i>
+                                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.5px;">{{ item.name }}</span>
+                                </div>
+
+                                <div class="trending-views" style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 0, 0, 0.4); padding: 0.4rem 0.8rem; border-radius: 20px; color: {% if loop.index == 1 %}var(--neon-pink){% else %}var(--neon-cyan){% endif %}; font-size: 0.85rem; font-weight: 800; white-space: nowrap; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                    👀 {{ item.views }}
+                                </div>
+
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </section>
+            {% endif %}
         </main>
 
         <footer class="footer">
