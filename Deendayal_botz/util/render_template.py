@@ -11,7 +11,6 @@ import urllib.parse
 import logging
 import aiohttp
 from plugins.channel import extract_media_info
-from database.stream_db import stream_db
 
 def parse_filename_for_template(file_name):
     details = {}
@@ -92,30 +91,13 @@ async def render_page(id, secure_hash, src=None):
     with open(template_file) as f:
         template = jinja2.Template(f.read())
 
-
     file_name = file_data.file_name.replace("_", " ")
     file_name = re.sub(r"[\.\[\]\{\}\(\)\@]", " ", file_name)
     file_name = re.sub(r"\s+", " ", file_name).strip()
 
     parsed = parse_filename_for_template(file_name)
 
-    view_count = await stream_db.increment_view_count(file_data.unique_id)
-    top_trending_raw = await stream_db.get_top_trending(10)
-    top_trending = []
-    for item in top_trending_raw:
-        item_name = item.get('file_name', '')
-        item_name = item_name.replace('_', ' ')
-        item_name = re.sub(r"[\.\[\]\{\}\(\)\@]", " ", item_name)
-        item_name = re.sub(r"\s+", " ", item_name).strip()
-        parsed_item = parse_filename_for_template(item_name)
-        top_trending.append({
-            'name': parsed_item.get('name', item_name),
-            'views': item.get('views', 0)
-        })
-
-
     return template.render(
-        view_count=view_count,
         file_name=file_name,
         file_url=src,
         file_size=file_size,
@@ -125,6 +107,5 @@ async def render_page(id, secure_hash, src=None):
         parsed_episode=parsed.get('episode', ''),
         parsed_year=parsed.get('year', ''),
         parsed_language=parsed.get('language', ''),
-        parsed_quality=parsed.get('quality', ''),
-        top_trending=top_trending
+        parsed_quality=parsed.get('quality', '')
     )
