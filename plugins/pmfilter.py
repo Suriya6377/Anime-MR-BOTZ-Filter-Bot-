@@ -2791,13 +2791,13 @@ async def advantage_spell_chok(client, message):
             )
             #d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
         except Exception as e:
-            #logger.error(f"[ERROR] advantage_spell_chok: buttons/reply failed | query='{search}' | user={user} | error: {e}")
+            logger.error(f"[ERROR] advantage_spell_chok: buttons/reply failed | query='{search}' | user={user} | error: {e}")
             try:
                 await message.delete()
             except Exception as e:
                 return
-        await asyncio.sleep(60)
-        await d.delete()
+        #await asyncio.sleep(60)
+        #await d.delete()
         try:
             await message.delete()
         except Exception as e:
