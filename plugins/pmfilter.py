@@ -2743,57 +2743,70 @@ async def ai_spell_check(chat_id, wrong_name):
     
 
 async def advantage_spell_chok(client, message):
-    mv_id = message.id
-    search = message.text
-    chat_id = message.chat.id
-    settings = await get_settings(chat_id)
-    query = re.sub(
-        r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
-        "", message.text, flags=re.IGNORECASE)
-    query = query.strip() + " movie"
     try:
-        movies = await get_poster(search, bulk=True)
-    except:
-        k = await message.reply(script.I_CUDNT.format(message.from_user.mention))
+        mv_id = message.id
+        search = message.text
+        chat_id = message.chat.id
+        settings = await get_settings(chat_id)
+        query = re.sub(
+            r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
+            "", message.text, flags=re.IGNORECASE)
+        query = query.strip() + " movie"
+        try:
+            movies = await get_poster(search, bulk=True)
+        except Exception as e:
+            print(f"[ERROR] advantage_spell_chok: get_poster failed | query='{search}' | error: {e}")
+            k = await message.reply(script.I_CUDNT.format(message.from_user.mention))
+            await asyncio.sleep(60)
+            await k.delete()
+            try:
+                await message.delete()
+            except Exception as e:
+                print(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
+            return
+        if not movies:
+            print(f"[INFO] advantage_spell_chok: no results found | query='{search}'")
+            google = search.replace(" ", "+")
+            button = [[
+                InlineKeyboardButton("🔍 ᴄʜᴇᴄᴋ sᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ 🔍", url=f"https://www.google.com/search?q={google}")
+            ],[
+                InlineKeyboardButton("Movie Request Admin", url=OWNER_LNK)
+            ]]
+            k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
+            await asyncio.sleep(60)
+            await k.delete()
+            try:
+                await message.delete()
+            except Exception as e:
+                print(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
+            return
+        user = message.from_user.id if message.from_user else 0
+        try:
+            buttons = [[
+                InlineKeyboardButton(text=movie.get('title'), callback_data=f"spol#{movie.imdb_id}#{user}")
+            ]
+                for movie in movies
+            ]
+            buttons.append(
+                [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
+            )
+            d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
+            print(f"[INFO] advantage_spell_chok: buttons sent | query='{search}' | results={len(movies)} | user={user}")
+        except Exception as e:
+            print(f"[ERROR] advantage_spell_chok: buttons/reply failed | query='{search}' | user={user} | error: {e}")
+            try:
+                await message.delete()
+            except Exception as e:
+                print(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
+            return
         await asyncio.sleep(60)
-        await k.delete()
+        await d.delete()
         try:
             await message.delete()
-        except:
-            pass
-        return
-    if not movies:
-        google = search.replace(" ", "+")
-        button = [[
-            InlineKeyboardButton("🔍 ᴄʜᴇᴄᴋ sᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ 🔍", url=f"https://www.google.com/search?q={google}")
-        ],[
-            InlineKeyboardButton("Movie Request Admin", url=OWNER_LNK)
-        ]]
-        k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
-        await asyncio.sleep(60)
-        await k.delete()
-        try:
-            await message.delete()
-        except:
-            pass
-        return
-    user = message.from_user.id if message.from_user else 0
-    buttons = [[
-        InlineKeyboardButton(text=movie.get('title'), callback_data=f"spol#{movie.imdb_id}#{user}")
-    ]
-        for movie in movies
-    ]
-    buttons.append(
-        [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
-    )
-    d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
-    await asyncio.sleep(60)
-    await d.delete()
-    try:
-        await message.delete()
-    except:
-        pass
-
+        except Exception as e:
+            print(f"[WARNING] advantage_spell_chok: final message.delete failed | msg_id={mv_id} | error: {e}")
+    except Exception as e:
+        print(f"[ERROR] advantage_spell_chok: unexpected error | error: {e}")
 
 async def manual_filters(client, message, text=False):
     settings = await get_settings(message.chat.id)
