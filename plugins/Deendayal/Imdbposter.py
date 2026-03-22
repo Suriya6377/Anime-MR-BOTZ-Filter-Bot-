@@ -7,7 +7,7 @@ from io import BytesIO
 from PIL import Image, ImageFilter
 from info import DEENDAYAL_IMAGE_FETCH, TMDB_API_KEY
 from imdbkit import IMDBKit
-
+from utils improt listx_to_str
 
 logger = logging.getLogger(__name__)
 ia = IMDBKit()
@@ -99,96 +99,102 @@ async def fetch_image(url, size=(860, 1200)):
     return None
 
 async def get_movie_details(query, bulk=False, id=False, file=None):
-    if not id:
-        query = (query.strip()).lower()
-        title = query
-        year_val = None
-        
-        year_list = re.findall(r'[1-2]\d{3}$', query, re.IGNORECASE)
-        if year_list:
-            year_val = year_list[0]
-            title = (query.replace(year_val, "")).strip()
-        elif file is not None:
-            year_list = re.findall(r'[1-2]\d{3}', file, re.IGNORECASE)
+    try:
+        if not id:
+            query = (query.strip()).lower()
+            title = query
+            year_val = None
+            
+            year_list = re.findall(r'[1-2]\d{3}$', query, re.IGNORECASE)
             if year_list:
                 year_val = year_list[0]
-        
-        search_result = await asyncio.to_thread(imdb.search_movie, title.lower())
-        if not search_result or not search_result.titles:
-            return None
-        
-        movie_list = search_result.titles
-        
-        if year_val:
-            filtered = [m for m in movie_list if m.year and str(m.year) == str(year_val)]
-            if not filtered:
+                title = (query.replace(year_val, "")).strip()
+            elif file is not None:
+                year_list = re.findall(r'[1-2]\d{3}', file, re.IGNORECASE)
+                if year_list:
+                    year_val = year_list[0]
+            
+            search_result = await asyncio.to_thread(imdb.search_movie, title.lower())
+            if not search_result or not search_result.titles:
+                return None
+            
+            movie_list = search_result.titles
+            
+            if year_val:
+                filtered = [m for m in movie_list if m.year and str(m.year) == str(year_val)]
+                if not filtered:
+                    filtered = movie_list
+            else:
                 filtered = movie_list
+                
+            kind_filter = ['movie', 'tv series', 'tvSeries', 'tvMiniSeries', 'tvMovie']
+            filtered_kind = [m for m in filtered if m.kind and m.kind in kind_filter]
+            
+            if not filtered_kind:
+                filtered_kind = filtered
+            
+            if bulk:
+                return filtered_kind
+                
+            movie_brief = filtered_kind[0]
+            movieid_str = movie_brief.imdb_id 
         else:
-            filtered = movie_list
-            
-        kind_filter = ['movie', 'tv series', 'tvSeries', 'tvMiniSeries', 'tvMovie']
-        filtered_kind = [m for m in filtered if m.kind and m.kind in kind_filter]
-        
-        if not filtered_kind:
-            filtered_kind = filtered
-        
-        if bulk:
-            return filtered_kind
-            
-        movie_brief = filtered_kind[0]
-        movieid_str = movie_brief.imdb_id 
-    else:
-        movieid_str = query
+            movieid_str = query
 
-    movie = await asyncio.to_thread(imdb.get_movie, movieid_str)
-    if not movie:
+        movie = await asyncio.to_thread(imdb.get_movie, movieid_str)
+        if not movie:
+            return None
+
+        if movie.release_date:
+            date = movie.release_date
+        elif movie.year:
+            date = str(movie.year)
+        else:
+            date = "N/A"
+            
+        plot = movie.plot or ""
+        if plot and len(plot) > 800:
+            plot = plot[0:800] + "..."
+            
+        return {
+            'title': movie.title,
+            'votes': movie.votes,
+            "aka": listx_to_str(movie.title_akas),
+            "seasons": (
+                len(movie.info_series.display_seasons)
+                if getattr(movie, "info_series", None)
+                and getattr(movie.info_series, "display_seasons", None)
+                else "N/A"
+            ),
+            "box_office": movie.worldwide_gross,
+            'localized_title': movie.title_localized,
+            'kind': movie.kind,
+            "imdb_id": f"tt{movie.imdb_id}",
+            "cast": listx_to_str(movie.stars),
+            "runtime": listx_to_str(movie.duration),
+            "countries": listx_to_str(movie.countries),
+            "certificates": listx_to_str(movie.certificates),
+            "languages": listx_to_str(movie.languages),
+            "director": listx_to_str(movie.directors),
+            "writer": listx_to_str([p.name for p in (movie.writers or [])]),
+            "producer": listx_to_str([p.name for p in (movie.producers or [])]),
+            "composer": listx_to_str([p.name for p in (movie.composers or [])]),
+            "cinematographer": listx_to_str([p.name for p in (movie.cinematographers or [])]),
+            "music_team": listx_to_str([p.name for p in (movie.music_team or [])]),
+            "distributors": listx_to_str([c.name for c in (movie.distributors or [])]),
+            'release_date': date,
+            'year': movie.year,
+            'genres': listx_to_str(movie.genres),
+            'poster': movie.cover_url,
+            'plot': plot,
+            'rating': str(movie.rating),
+            'url': movie.url or f'https://www.imdb.com/title/tt{movie.imdb_id}'
+        }
+
+    except Exception as e:
+        print(f"[get_movie_details] Error fetching poster for query='{query}': {e}")
         return None
 
-    if movie.release_date:
-        date = movie.release_date
-    elif movie.year:
-        date = str(movie.year)
-    else:
-        date = "N/A"
-        
-    plot = movie.plot or ""
-    if plot and len(plot) > 800:
-        plot = plot[0:800] + "..."
-        
-    return {
-        'title': movie.title,
-        'votes': movie.votes,
-        "aka": listx_to_str(movie.title_akas),
-        "seasons": (
-            len(movie.info_series.display_seasons)
-            if getattr(movie, "info_series", None)
-            and getattr(movie.info_series, "display_seasons", None)
-            else "N/A"
-        ),
-        "box_office": movie.worldwide_gross,
-        'localized_title': movie.title_localized,
-        'kind': movie.kind,
-        "imdb_id": f"tt{movie.imdb_id}",
-        "cast": listx_to_str(movie.stars),
-        "runtime": listx_to_str(movie.duration),
-        "countries": listx_to_str(movie.countries),
-        "certificates": listx_to_str(movie.certificates),
-        "languages": listx_to_str(movie.languages),
-        "director": listx_to_str(movie.directors),
-        "writer": listx_to_str([p.name for p in (movie.writers or [])]),
-        "producer": listx_to_str([p.name for p in (movie.producers or [])]),
-        "composer": listx_to_str([p.name for p in (movie.composers or [])]),
-        "cinematographer": listx_to_str([p.name for p in (movie.cinematographers or [])]),
-        "music_team": listx_to_str([p.name for p in (movie.music_team or [])]),
-        "distributors": listx_to_str([c.name for c in (movie.distributors or [])]),
-        'release_date': date,
-        'year': movie.year,
-        'genres': listx_to_str(movie.genres),
-        'poster': movie.cover_url,
-        'plot': plot,
-        'rating': str(movie.rating),
-        'url': movie.url or f'https://www.imdb.com/title/tt{movie.imdb_id}'
-    }
 
 async def get_movie_detailsx(query, id=False, file=None):
     base_url = "https://bharath-boy-api.vercel.app/api/movie-posters"

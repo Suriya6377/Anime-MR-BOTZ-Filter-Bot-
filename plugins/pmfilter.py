@@ -2720,10 +2720,13 @@ async def auto_filter(client, msg, spoll=False):
             await message.delete()
 
 async def ai_spell_check(chat_id, wrong_name):
-    async def search_movie(wrong_name):
-        search_results = imdb.search_movie(wrong_name)
-        movie_list = [movie['title'] for movie in search_results]
-        return movie_list
+    async def search_movie(name):
+        try:
+            search_results = await asyncio.to_thread(imdb.search_movie, name)
+            return [movie.title for movie in search_results.titles]
+        except Exception as e:
+            LOGGER.error(f"ai_spell_check IMDB error: {e}")
+            return []
     movie_list = await search_movie(wrong_name)
     if not movie_list:
         return
@@ -2734,8 +2737,10 @@ async def ai_spell_check(chat_id, wrong_name):
         movie = closest_match[0]
         files, offset, total_results = await get_search_results(chat_id=chat_id, query=movie)
         if files:
-            return movie
+            return movie  
         movie_list.remove(movie)
+    return
+    
 
 async def advantage_spell_chok(client, message):
     mv_id = message.id
