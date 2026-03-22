@@ -2795,7 +2795,7 @@ async def advantage_spell_chok(client, message):
             try:
                 await message.delete()
             except Exception as e:
-            return
+                return
         await asyncio.sleep(60)
         await d.delete()
         try:
