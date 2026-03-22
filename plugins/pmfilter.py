@@ -2725,7 +2725,7 @@ async def ai_spell_check(chat_id, wrong_name):
             search_results = await asyncio.to_thread(imdb.search_movie, name)
             return [movie.title for movie in search_results.titles]
         except Exception as e:
-            LOGGER.error(f"ai_spell_check IMDB error: {e}")
+            print(f"ai_spell_check IMDB error: {e}")
             return []
     movie_list = await search_movie(wrong_name)
     if not movie_list:
@@ -2779,7 +2779,7 @@ async def advantage_spell_chok(client, message):
         return
     user = message.from_user.id if message.from_user else 0
     buttons = [[
-        InlineKeyboardButton(text=movie.get('title'), callback_data=f"spol#{movie.movieID}#{user}")
+        InlineKeyboardButton(text=movie.get('title'), callback_data=f"spol#{movie.imdb_id}#{user}")
     ]
         for movie in movies
     ]
