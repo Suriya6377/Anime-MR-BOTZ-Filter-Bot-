@@ -7,6 +7,7 @@ umongo
 requests
 bs4
 git+https://github.com/NBBotz/IMDBKit.git@main
+jmespath==1.1.0
 shortzy
 datetime
 pytz
@@ -45,6 +46,4 @@ fuzzywuzzy
 python-Levenshtein
 
 # Additional Tools
-googletrans==3.1.0a0
 telegraph==2.2.0
-gTTS==2.3.1
