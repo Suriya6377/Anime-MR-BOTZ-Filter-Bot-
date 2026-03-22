@@ -2765,7 +2765,6 @@ async def advantage_spell_chok(client, message):
                 logger.error(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
             return
         if not movies:
-            logger.error(f"[INFO] advantage_spell_chok: no results found | query='{search}'")
             google = search.replace(" ", "+")
             button = [[
                 InlineKeyboardButton("🔍 ᴄʜᴇᴄᴋ sᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ 🔍", url=f"https://www.google.com/search?q={google}")
@@ -2783,7 +2782,7 @@ async def advantage_spell_chok(client, message):
         user = message.from_user.id if message.from_user else 0
         try:
             buttons = [[
-                InlineKeyboardButton(text=movie.get('title'), callback_data=f"spol#{movie.imdb_id}#{user}")
+                InlineKeyboardButton(text=movie.title, callback_data=f"spol#{movie.imdb_id}#{user}")
             ]
                 for movie in movies
             ]
@@ -2791,13 +2790,11 @@ async def advantage_spell_chok(client, message):
                 [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
             )
             d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
-            logger.error(f"[INFO] advantage_spell_chok: buttons sent | query='{search}' | results={len(movies)} | user={user}")
         except Exception as e:
             logger.error(f"[ERROR] advantage_spell_chok: buttons/reply failed | query='{search}' | user={user} | error: {e}")
             try:
                 await message.delete()
             except Exception as e:
-                logger.error(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
             return
         await asyncio.sleep(60)
         await d.delete()
