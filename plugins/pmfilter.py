@@ -2725,7 +2725,7 @@ async def ai_spell_check(chat_id, wrong_name):
             search_results = await asyncio.to_thread(imdb.search_movie, name)
             return [movie.title for movie in search_results.titles]
         except Exception as e:
-            print(f"ai_spell_check IMDB error: {e}")
+            logger.error(f"ai_spell_check IMDB error: {e}")
             return []
     movie_list = await search_movie(wrong_name)
     if not movie_list:
@@ -2755,17 +2755,17 @@ async def advantage_spell_chok(client, message):
         try:
             movies = await get_poster(search, bulk=True)
         except Exception as e:
-            print(f"[ERROR] advantage_spell_chok: get_poster failed | query='{search}' | error: {e}")
+            logger.error(f"[ERROR] advantage_spell_chok: get_poster failed | query='{search}' | error: {e}")
             k = await message.reply(script.I_CUDNT.format(message.from_user.mention))
             await asyncio.sleep(60)
             await k.delete()
             try:
                 await message.delete()
             except Exception as e:
-                print(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
+                logger.error(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
             return
         if not movies:
-            print(f"[INFO] advantage_spell_chok: no results found | query='{search}'")
+            logger.error(f"[INFO] advantage_spell_chok: no results found | query='{search}'")
             google = search.replace(" ", "+")
             button = [[
                 InlineKeyboardButton("🔍 ᴄʜᴇᴄᴋ sᴘᴇʟʟɪɴɢ ᴏɴ ɢᴏᴏɢʟᴇ 🔍", url=f"https://www.google.com/search?q={google}")
@@ -2778,7 +2778,7 @@ async def advantage_spell_chok(client, message):
             try:
                 await message.delete()
             except Exception as e:
-                print(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
+                logger.error(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
             return
         user = message.from_user.id if message.from_user else 0
         try:
@@ -2791,22 +2791,22 @@ async def advantage_spell_chok(client, message):
                 [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
             )
             d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
-            print(f"[INFO] advantage_spell_chok: buttons sent | query='{search}' | results={len(movies)} | user={user}")
+            logger.error(f"[INFO] advantage_spell_chok: buttons sent | query='{search}' | results={len(movies)} | user={user}")
         except Exception as e:
-            print(f"[ERROR] advantage_spell_chok: buttons/reply failed | query='{search}' | user={user} | error: {e}")
+            logger.error(f"[ERROR] advantage_spell_chok: buttons/reply failed | query='{search}' | user={user} | error: {e}")
             try:
                 await message.delete()
             except Exception as e:
-                print(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
+                logger.error(f"[WARNING] advantage_spell_chok: message.delete failed | msg_id={mv_id} | error: {e}")
             return
         await asyncio.sleep(60)
         await d.delete()
         try:
             await message.delete()
         except Exception as e:
-            print(f"[WARNING] advantage_spell_chok: final message.delete failed | msg_id={mv_id} | error: {e}")
+            logger.error(f"[WARNING] advantage_spell_chok: final message.delete failed | msg_id={mv_id} | error: {e}")
     except Exception as e:
-        print(f"[ERROR] advantage_spell_chok: unexpected error | error: {e}")
+        logger.error(f"[ERROR] advantage_spell_chok: unexpected error | error: {e}")
 
 async def manual_filters(client, message, text=False):
     settings = await get_settings(message.chat.id)
