@@ -1,7 +1,5 @@
-<p align="center"> <img src="https://github.com/MrRaazz/Pics/blob/main/deenu.jpg"> </p>
+<p align="center"> <img src="https://graph.org/file/ef043e0bfe76db3af15f9.jpg"> </p>
 <h1 align="center"> 𝑫𝒆𝒆𝒏𝒅𝒂𝒚𝒂𝒍_𝒅𝒉𝒂𝒌𝒂𝒅 </h1>
-
-### 🔥 [Check Out the Upgraded Version](https://github.com/DreamXBotz/Auto_Filter_Bot.git)
 
 **OWNER**
 <!-- > ## ⚠ <u>Under Maintenance</u> ⚠  
