@@ -60,7 +60,7 @@ OTT_PLATFORMS = {
     "amzn": "Amazon Prime Video", "prime": "Amazon Prime Video", "primevideo": "Amazon Prime Video",
     "hotstar": "Disney+ Hotstar", "zee5": "Zee5",
     "jio": "JioHotstar", "jhs": "JioHotstar",
-    "aha": "Aha", "hbo": "HBO Max", "paramount": "Paramount+",
+    "aha": "Aha", "hbo": "HBO Max", "paramount": "Paramount+", "CR": "Crunchyroll",
     "ATVP": "Apple TV+", "hoichoi": "Hoichoi", "sunnxt": "Sun NXT", "viki": "Viki"
 }
 
@@ -75,8 +75,8 @@ CLEAN_PATTERN = re.compile(r'@[^ \n\r\t\.,:;!?()\[\]{}<>\\/"\'=_%]+|\bwww\.[^\s\
 NORMALIZE_PATTERN = re.compile(r"[._]+|[()\[\]{}:;'–!,.?_]")
 QUALITY_PATTERN = re.compile(
     r"\b(?:HDCam|HDTC|CamRip|TS|TC|TeleSync|DVDScr|DVDRip|PreDVD|"
-    r"WEBRip|WEB-DL|TVRip|HDTV|WEB DL|WebDl|BluRay|BRRip|BDRip|"
-    r"360p|480p|720p|1080p|2160p|4K|1440p|540p|240p|140p|HEVC|HDRip)\b",
+    r"WEBRip|WEB-DL|TVRip|HDTV|BluRay|BRRip|BDRip|"
+    r"360p|480p|720p|1080p|2160p|4K|1440p|540p|240p|140p|HDRip)\b",
     re.IGNORECASE
 )
 YEAR_PATTERN = re.compile(r"(?<![A-Za-z0-9])(?:19|20)\d{2}(?![A-Za-z0-9])")
@@ -302,11 +302,11 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
         if LANDSCAPE_POSTER:
              poster_url = tmdb_details.get("backdrop_url")
              if not poster_url:
-                 poster_url = imdb_details.get("backdrop_url")
+                 poster_url = imdb_details.get("poster")
         if not poster_url:
              poster_url = tmdb_details.get("poster_url")
              if not poster_url:
-                 poster_url = imdb_details.get("poster_url")
+                 poster_url = imdb_details.get("poster")
 
         movie_doc = {
             "_id": group_id,
@@ -490,6 +490,9 @@ def generate_movie_message(movie_doc, group_id):
             epi_block = f"🎬 ᴇᴘɪsᴏᴅᴇs : <b>{epi_str}</b>"
 
     genres = movie_doc.get("genres", "N/A")
+    genres_block = f"\n<b>🎭 ɢᴇɴʀᴇs : {genres}</b>\n" if genres and genres != "N/A" else ""
+    rating = movie_doc.get("rating", "N/A")
+    rating_block = f"\n<b>🎞 ʀᴀᴛɪɴɢ  : {rating}</b>" if rating and rating != "N/A" else ""
     quality_str = ", ".join(sorted(all_qualities)) if all_qualities else "N/A"
     language_str = ", ".join(sorted(all_languages)) if all_languages else "N/A"
     ott_str = ", ".join(sorted(all_ott_platforms)) if all_ott_platforms else "N/A"
@@ -541,12 +544,12 @@ def generate_movie_message(movie_doc, group_id):
         imdb_url=movie_doc.get("imdb_url", ""),
         filename=group_id,
         tag=primary_tag,
-        genres=genres,
+        genres_block=genres_block,
         ott_line=ott_line,
         quality=quality_str,
         language=language_str,
         episodes=epi_block,
-        rating=movie_doc.get("rating", "N/A"),
+        rating_block=rating_block,
         duration=duration_str,
         search_link=temp.B_LINK,
         date=date_str,
