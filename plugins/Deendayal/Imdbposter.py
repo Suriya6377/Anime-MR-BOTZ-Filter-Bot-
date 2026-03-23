@@ -7,7 +7,7 @@ from io import BytesIO
 from PIL import Image, ImageFilter
 from info import DEENDAYAL_IMAGE_FETCH, TMDB_API_KEY
 from imdbkit import IMDBKit
-from utils import listx_to_str
+from utils import listx_to_str, imdb
 
 logger = logging.getLogger(__name__)
 ia = IMDBKit()
