@@ -490,10 +490,26 @@ def generate_movie_message(movie_doc, group_id):
             epi_block = f"🎬 ᴇᴘɪsᴏᴅᴇs : <b>{epi_str}</b>"
 
     genres = movie_doc.get("genres", "N/A")
-    genres_block = f"\n<b>🎭 ɢᴇɴʀᴇs : {genres}</b>\n" if genres and genres != "N/A" else ""
+    genres_block = f"\n<b>🎭 ɢᴇɴʀᴇs : {genres}</b>" if genres and genres != "N/A" else ""
     rating = movie_doc.get("rating", "N/A")
-    rating_block = f"\n<b>🎞 ʀᴀᴛɪɴɢ  : {rating}</b>" if rating and rating != "N/A" else ""
-    quality_str = ", ".join(sorted(all_qualities)) if all_qualities else "N/A"
+    rating_block = f"<b>🎞 ʀᴀᴛɪɴɢ  : {rating}</b>" if rating and rating != "N/A" else ""
+
+    # Format qualities
+    QUALITY_MAP = {
+        "web-dl": "WEB-DL", "webrip": "WEBRip", "hdcam": "HDCam", "hdtc": "HDTC",
+        "camrip": "CamRip", "ts": "TS", "tc": "TC", "telesync": "TeleSync",
+        "dvdscr": "DVDScr", "dvdrip": "DVDRip", "predvd": "PreDVD", "tvrip": "TVRip",
+        "hdtv": "HDTV", "bluray": "BluRay", "brrip": "BRRip", "bdrip": "BDRip",
+        "hdrip": "HDRip"
+    }
+    formatted_qualities = set()
+    for q in all_qualities:
+        q_lower = q.lower()
+        if q_lower == "hevc":
+            continue
+        formatted_qualities.add(QUALITY_MAP.get(q_lower, q))
+
+    quality_str = ", ".join(sorted(formatted_qualities)) if formatted_qualities else "N/A"
     language_str = ", ".join(sorted(all_languages)) if all_languages else "N/A"
     ott_str = ", ".join(sorted(all_ott_platforms)) if all_ott_platforms else "N/A"
     ott_line = f"🌐 ᴏᴛᴛ    : <b>{ott_str}</b>\n" if ott_str != "N/A" and ott_str else ""
@@ -530,9 +546,9 @@ def generate_movie_message(movie_doc, group_id):
                 formatted = f"{total_mins} min"
 
             if primary_tag == "#SERIES":
-                duration_str = f"\n⏱ ᴅᴜʀᴀᴛɪᴏɴ : <b>{formatted}/ep (Avg)</b>"
+                duration_str = f"\n<b>⏱ ᴅᴜʀᴀᴛɪᴏɴ : </b><b>{formatted}/ep (Avg)</b>"
             else:
-                duration_str = f"\n⏱ ᴅᴜʀᴀᴛɪᴏɴ : <b>{formatted}</b>"
+                duration_str = f"\n<b>⏱ ᴅᴜʀᴀᴛɪᴏɴ : </b><b>{formatted}</b>"
 
     ist = pytz.timezone('Asia/Kolkata')
     now = datetime.now(ist)
