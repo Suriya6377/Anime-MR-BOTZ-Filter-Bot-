@@ -6,9 +6,11 @@ import logging
 from io import BytesIO
 from PIL import Image, ImageFilter
 from info import DEENDAYAL_IMAGE_FETCH, TMDB_API_KEY
-from utils import listx_to_str, imdb
+from imdbkit import IMDBKit
+from utils import listx_to_str
 
 logger = logging.getLogger(__name__)
+ia = IMDBKit()
 LONG_IMDB_DESCRIPTION = False
 
 def list_to_str(lst):
