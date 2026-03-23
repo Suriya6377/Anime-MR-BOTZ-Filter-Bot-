@@ -280,14 +280,12 @@ Powered By ⚜️ : <a href="https://t.me/Deendayal_dhakadd">Deendayal Dhakad</a
     MOVIE_UPDATE_NOTIFY_TXT = """<blockquote><b>📥 𝖭𝖤𝖶 𝖥𝖨𝖫𝖤 𝖠𝖣𝖣𝖤𝖣 ✅</b></blockquote>
 <b>
 🫥  <b><code>{filename}</code> ⿻ </b> | ⭐ <b><a href={poster_url}></a><a href={imdb_url}>ɪᴍᴅʙ ɪɴғᴏ</a></b>
-
-<b>🎭 ɢᴇɴʀᴇs : {genres}</b>
+{genres_block}
 <b>{ott_line}</b>
 <b>📽 ǫᴜᴀʟɪᴛʏ : {quality}</b>
 
 <b>🔊 ᴀᴜᴅɪᴏ   : {language}</b>
-
-<b>🎞 ʀᴀᴛɪɴɢ  : {rating}</b>{duration}
+{rating_block}{duration}
 <b>{episodes}</b>
 <blockquote><b>〽️ Powered by ➖ <a href="https://t.me/Nobita_Files_Filter_bot">D͜͡e͜͡e͜͡n͜͡d͜͡a͜͡y͜͡a͜͡l͜͡ d͜͡h͜͡a͜͡k͜͡a͜͡d͜͡</a></b></blockquote>
 <b>🕒 {date} | {time}</b>
