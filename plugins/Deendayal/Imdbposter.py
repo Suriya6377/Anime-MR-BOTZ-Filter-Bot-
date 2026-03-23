@@ -114,7 +114,7 @@ async def get_movie_details(query, bulk=False, id=False, file=None):
                 if year_list:
                     year_val = year_list[0]
             
-            search_result = await asyncio.to_thread(imdb.search_movie, title.lower())
+            search_result = await asyncio.to_thread(ia.search_movie, title.lower())
             if not search_result or not search_result.titles:
                 return None
             
@@ -141,7 +141,7 @@ async def get_movie_details(query, bulk=False, id=False, file=None):
         else:
             movieid_str = query
 
-        movie = await asyncio.to_thread(imdb.get_movie, movieid_str)
+        movie = await asyncio.to_thread(ia.get_movie, movieid_str)
         if not movie:
             return None
 
