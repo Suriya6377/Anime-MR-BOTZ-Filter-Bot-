@@ -237,10 +237,10 @@ async def publish_post(client, chat_id, data):
             text += f"\n<b>🎭 ɢᴇɴʀᴇs : {genres}</b>\n"
 
         if ott != "N/A":
-            text += f"<b>🌐 ᴏᴛᴛ    : {ott}</b>\n"
+            text += f"<b>🌐 ᴏᴛᴛ    : {ott}</b>\n\n"
 
         text += f"<b>📽 ǫᴜᴀʟɪᴛʏ : {quality}</b>\n\n"
-        text += f"<b>🔊 ᴀᴜᴅɪᴏ   : {audio}</b>\n"
+        text += f"<b>🔊 ᴀᴜᴅɪᴏ   : {audio}</b>\n\n"
 
         if rating != "N/A":
             text += f"<b>🎞 ʀᴀᴛɪɴɢ  : {rating}</b>"
