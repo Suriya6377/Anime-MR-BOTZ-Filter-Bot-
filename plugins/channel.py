@@ -280,9 +280,58 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
                             tmdb_details = tmdb_retry
                             error_tmdb = False
 
-        raw_genres = imdb_details.get("genres", "N/A")
-        if raw_genres in ("N/A", "", None, []) and tmdb_details and tmdb_details.get("genres"):
-            raw_genres = tmdb_details.get("genres")
+        # We will determine the "source" based on which poster we end up using or which API succeeds
+        # First preference for poster is TMDB, then IMDB. If TMDB is successful, we try to use its rating/genres.
+        source_is_tmdb = False
+
+        poster_url = None
+        if LANDSCAPE_POSTER:
+             poster_url = tmdb_details.get("backdrop_url")
+             if poster_url: source_is_tmdb = True
+             if not poster_url:
+                 poster_url = imdb_details.get("poster")
+        if not poster_url:
+             poster_url = tmdb_details.get("poster_url")
+             if poster_url: source_is_tmdb = True
+             if not poster_url:
+                 poster_url = imdb_details.get("poster")
+
+        # Fallback for source if we didn't find a poster but still have details
+        if not poster_url:
+             if tmdb_details: source_is_tmdb = True
+             elif imdb_details: source_is_tmdb = False
+
+        if source_is_tmdb:
+            raw_genres = tmdb_details.get("genres", "N/A")
+            if raw_genres in ("N/A", "", None, []) and imdb_details and imdb_details.get("genres"):
+                raw_genres = imdb_details.get("genres")
+
+            rating = str(tmdb_details.get("rating", "N/A"))
+            if rating in ("N/A", "", "None") and imdb_details and imdb_details.get("rating"):
+                rating = str(imdb_details.get("rating"))
+
+            runtime = tmdb_details.get("runtime")
+            if not runtime and imdb_details and imdb_details.get("runtime"):
+                runtime = str(imdb_details.get("runtime"))
+
+            url = tmdb_details.get("tmdb_url", "") or imdb_details.get("url", "")
+            rating_source = "tmdb" if tmdb_details.get("rating") else "imdb"
+
+        else:
+            raw_genres = imdb_details.get("genres", "N/A")
+            if raw_genres in ("N/A", "", None, []) and tmdb_details and tmdb_details.get("genres"):
+                raw_genres = tmdb_details.get("genres")
+
+            rating = imdb_details.get("rating", "N/A")
+            if rating in ("N/A", "", None) and tmdb_details and tmdb_details.get("rating"):
+                rating = str(tmdb_details.get("rating"))
+
+            runtime = imdb_details.get("runtime")
+            if not runtime and tmdb_details and tmdb_details.get("runtime"):
+                runtime = str(tmdb_details.get("runtime"))
+
+            url = imdb_details.get("url", "") or tmdb_details.get("tmdb_url", "")
+            rating_source = "imdb" if imdb_details.get("rating") else "tmdb"
 
         if isinstance(raw_genres, str):
             genre_list = [g.strip() for g in raw_genres.split(",")]
@@ -290,32 +339,17 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
         else:
             genres = ", ".join(g for g in raw_genres if g in STANDARD_GENRES) or "N/A"
 
-        rating = imdb_details.get("rating", "N/A")
-        if rating in ("N/A", "", None) and tmdb_details and tmdb_details.get("rating"):
-            rating = str(tmdb_details.get("rating"))
-
-        runtime = imdb_details.get("runtime")
-        if not runtime and tmdb_details and tmdb_details.get("runtime"):
-            runtime = str(tmdb_details.get("runtime"))
-
-        poster_url = None
-        if LANDSCAPE_POSTER:
-             poster_url = tmdb_details.get("backdrop_url")
-             if not poster_url:
-                 poster_url = imdb_details.get("poster")
-        if not poster_url:
-             poster_url = tmdb_details.get("poster_url")
-             if not poster_url:
-                 poster_url = imdb_details.get("poster")
-
         movie_doc = {
             "_id": group_id,
             "files": [file_data],
             "poster_url": poster_url,
             "genres": genres,
             "rating": rating,
+            "rating_source": rating_source,
             "runtime": runtime,
-            "imdb_url": imdb_details.get("url", "") or tmdb_details.get("tmdb_url", ""),
+            "imdb_url": url, # Kept for backward DB compatibility, stores the actual source URL
+            "url": url,
+            "source": "tmdb" if source_is_tmdb else "imdb",
             "year": media_info["year"] or imdb_details.get("year"),
             "tag": media_info["tag"],
             "ott_platform": media_info["ott_platform"],
@@ -491,8 +525,24 @@ def generate_movie_message(movie_doc, group_id):
 
     genres = movie_doc.get("genres", "N/A")
     genres_block = f"\n<b>🎭 ɢᴇɴʀᴇs : {genres}</b>" if genres and genres != "N/A" else ""
+
     rating = movie_doc.get("rating", "N/A")
-    rating_block = f"<b>🎞 ʀᴀᴛɪɴɢ  : {rating}</b>" if rating and rating != "N/A" else ""
+    # Determine rating source for label
+    rating_source = movie_doc.get("rating_source")
+    if not rating_source:
+        # Fallback for old documents that didn't save rating_source
+        url_fallback = movie_doc.get("url", "") or movie_doc.get("imdb_url", "")
+        rating_source = "tmdb" if "themoviedb.org" in url_fallback else "imdb"
+
+    rating_label = "ʀᴀᴛɪɴɢ" if rating_source == "tmdb" else "ʀᴀᴛɪɴɢ"
+    rating_block = f"<b>🎞 {rating_label}  : {rating}</b>" if rating and rating != "N/A" else ""
+
+    # Determine info link label
+    url = movie_doc.get("url") or movie_doc.get("imdb_url", "")
+    source = movie_doc.get("source")
+    if not source:
+        source = "tmdb" if "themoviedb.org" in url else "imdb"
+    source_info = "ᴛᴍᴅʙ ɪɴғᴏ" if source == "tmdb" else "ɪᴍᴅʙ ɪɴғᴏ"
 
     # Format qualities
     QUALITY_MAP = {
@@ -557,7 +607,8 @@ def generate_movie_message(movie_doc, group_id):
 
     return script.MOVIE_UPDATE_NOTIFY_TXT.format(
         poster_url=movie_doc.get("poster_url", ""),
-        imdb_url=movie_doc.get("imdb_url", ""),
+        url=url,
+        source_info=source_info,
         filename=group_id,
         tag=primary_tag,
         genres_block=genres_block,

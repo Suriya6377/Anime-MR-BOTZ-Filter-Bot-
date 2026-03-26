@@ -16,6 +16,7 @@ PROMPTS = {
     "poster": "Send Poster (Photo or URL):",
     "movie_name": "Enter Movie Name (e.g., Sirens Kiss S01):",
     "imdb_link": "Enter IMDb Link:",
+    "tmdb_link": "Enter TMDb Link:",
     "genres": "Enter Genres:",
     "ott": "Enter OTT Platform:",
     "quality": "Enter Quality:",
@@ -38,18 +39,19 @@ def get_post_keyboard(data):
         return f"❌ {label}"
 
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(get_text("poster", "🖼️ Poster"), callback_data="mp_poster")],
-        [InlineKeyboardButton(get_text("movie_name", "Movie Name"), callback_data="mp_movie_name"),
-         InlineKeyboardButton(get_text("imdb_link", "IMDb Link"), callback_data="mp_imdb_link")],
+        [InlineKeyboardButton(get_text("movie_name", "🫥 ᴍᴏᴠɪᴇ ɴᴀᴍᴇ"), callback_data="mp_movie_name"),
+         InlineKeyboardButton(get_text("poster", "🖼️ ᴘᴏsᴛᴇʀ"), callback_data="mp_poster")],
+        [InlineKeyboardButton(get_text("imdb_link", "⭐ Iᴍᴅʙ ɪɴғᴏ"), callback_data="mp_imdb_link"),
+         InlineKeyboardButton(get_text("tmdb_link", "⭐ ᴛᴍᴅʙ ɪɴғᴏ"), callback_data="mp_tmdb_link")],
         [InlineKeyboardButton(get_text("genres", "🎭 ɢᴇɴʀᴇs"), callback_data="mp_genres"),
-         InlineKeyboardButton(get_text("ott", "🌐 OTT"), callback_data="mp_ott")],
+         InlineKeyboardButton(get_text("ott", "🌐 ᴏᴛᴛ"), callback_data="mp_ott")],
         [InlineKeyboardButton(get_text("quality", "📽 ǫᴜᴀʟɪᴛʏ"), callback_data="mp_quality"),
          InlineKeyboardButton(get_text("audio", "🔊 ᴀᴜᴅɪᴏ"), callback_data="mp_audio")],
         [InlineKeyboardButton(get_text("rating", "🎞 ʀᴀᴛɪɴɢ"), callback_data="mp_rating"),
          InlineKeyboardButton(get_text("duration", "⏱ ᴅᴜʀᴀᴛɪᴏɴ"), callback_data="mp_duration")],
         [InlineKeyboardButton(get_text("episodes", "🎬 ᴇᴘɪsᴏᴅᴇs"), callback_data="mp_episodes")],
-        [InlineKeyboardButton("✅ Publish Post", callback_data="mp_publish"),
-         InlineKeyboardButton("🗑 Cancel", callback_data="mp_cancel")]
+        [InlineKeyboardButton("✅ Pᴜʙʟɪsʜ Pᴏsᴛ", callback_data="mp_publish"),
+         InlineKeyboardButton("🗑 Cᴀɴᴄᴇʟ", callback_data="mp_cancel")]
     ])
 
 
@@ -67,6 +69,7 @@ async def start_manual_post(client, message):
     data = {k: "N/A" for k in PROMPTS.keys() if k != "poster"}
     data["poster"] = None
     data["imdb_link"] = "#"
+    data["tmdb_link"] = "#"
 
     msg = await message.reply_text(
         "**Manual Movie Update Post**\n\nClick the buttons below to fill in the details. Once ready, click Publish.",
@@ -178,7 +181,7 @@ async def process_manual_post_input(client, message):
     else:
         text = message.text.strip() if message.text else ""
         if text.lower() == 'skip':
-            if key == "imdb_link":
+            if key in ["imdb_link", "tmdb_link"]:
                 session["data"][key] = "#"
             elif key == "movie_name":
                 session["data"][key] = None # invalid state, but we handle it
@@ -221,6 +224,7 @@ async def publish_post(client, chat_id, data):
         movie_name = data.get("movie_name", "Unknown")
         poster_url = data.get("poster_url")
         imdb_link = data.get("imdb_link", "#")
+        tmdb_link = data.get("tmdb_link", "#")
         genres = data.get("genres", "N/A")
         ott = data.get("ott", "N/A")
         quality = data.get("quality", "N/A")
@@ -231,7 +235,18 @@ async def publish_post(client, chat_id, data):
 
         text = f"<blockquote><b>📥 𝖭𝖤𝖶 𝖥𝖨𝖫𝖤 𝖠𝖣𝖣𝖤𝖣 ✅</b></blockquote>\n\n"
 
-        text += f"🫥  <b><code>{movie_name}</code> ⿻ </b> | ⭐ <b><a href='{poster_url or '#'}'></a><a href='{imdb_link}'>ɪᴍᴅʙ ɪɴғᴏ</a></b>\n"
+        # Dynamically add IMDb or TMDb links
+        links_block = ""
+        if imdb_link != "#":
+            links_block += f"⭐ <b><a href='{imdb_link}'>ɪᴍᴅʙ ɪɴғᴏ</a></b> "
+        if tmdb_link != "#":
+            links_block += f"⭐ <b><a href='{tmdb_link}'>ᴛᴍᴅʙ ɪɴғᴏ</a></b> "
+
+        # Default fallback if neither is provided
+        if not links_block:
+             links_block = f"⭐ <b><a href='#'>ɪᴍᴅʙ ɪɴғᴏ</a></b>"
+
+        text += f"🫥  <b><code>{movie_name}</code> ⿻ </b> | <a href='{poster_url or '#'}'></a>{links_block.strip()}\n"
 
         if genres != "N/A":
             text += f"\n<b>🎭 ɢᴇɴʀᴇs : {genres}</b>\n"
