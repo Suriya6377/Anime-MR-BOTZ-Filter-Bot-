@@ -279,7 +279,7 @@ Powered By ⚜️ : <a href="https://t.me/Deendayal_dhakadd">Deendayal Dhakad</a
 
     MOVIE_UPDATE_NOTIFY_TXT = """<blockquote><b>📥 𝖭𝖤𝖶 𝖥𝖨𝖫𝖤 𝖠𝖣𝖣𝖤𝖣 ✅</b></blockquote>
 <b>
-🫥  <b><code>{filename}</code> ⿻ </b> | ⭐ <b><a href={poster_url}></a><a href={imdb_url}>ɪᴍᴅʙ ɪɴғᴏ</a></b>
+🫥  <b><code>{filename}</code> ⿻ </b> | ⭐ <b><a href={poster_url}></a><a href={url}>{source_info}</a></b>
 {genres_block}
 <b>{ott_line}</b>
 <b>📽 ǫᴜᴀʟɪᴛʏ : {quality}</b>
