@@ -197,71 +197,116 @@ async def get_movie_details(query, bulk=False, id=False, file=None):
 
 
 async def get_movie_detailsx(query, id=False, file=None):
-    base_url = "https://bharath-boy-api.vercel.app/api/movie-posters"
     q = str(query).strip()
     try:
         async with aiohttp.ClientSession() as session:
+            # Step 1: Search for the movie
+            search_url = "https://api.themoviedb.org/3/search/multi"
             params = {"query": q, "api_key": TMDB_API_KEY}
-            async with session.get(base_url, params=params) as resp:
+            async with session.get(search_url, params=params) as resp:
                 if resp.status != 200:
                     text = await resp.text()
-                    logger.error(f"API request failed [{resp.status}] for query={q}\n {text}")
-                    return await resp.json()
-
+                    logger.error(f"TMDB Search API request failed [{resp.status}] for query={q}\n {text}")
+                    return {"error": True}
                 data = await resp.json()
+
+            results = data.get("results", [])
+            if not results:
+                return {"error": True}
+
+            first_result = results[0]
+            tmdb_id = first_result.get("id")
+            media_type = first_result.get("media_type", "movie")
+
+            # Step 2: Get movie/tv details including images
+            details_url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}"
+            params = {"api_key": TMDB_API_KEY, "append_to_response": "images"}
+            async with session.get(details_url, params=params) as resp:
+                if resp.status != 200:
+                    return {"error": True}
+                details_data = await resp.json()
+
     except Exception as e:
         logger.error(f"An error occurred in get_movie_detailsx: {e}")
-        return None
+        return {"error": True}
 
     # Normalize fields
     details = {}
-    details['title'] = data.get('title') or data.get('localized_title')
-    details['year'] = (data.get('year', 0)) if data.get('year') else None
-    details['release_date'] = data.get('release_date')
-    details['rating'] = round(float(data.get('rating', 0)), 1) if data.get('rating') is not None else None
-    details['votes'] = int(data.get('votes', 0))
-    details['runtime'] = data.get('runtime')
-    details['certificates'] = data.get('certificates')
-    details['tmdb_url'] = data.get('url')
+    details['title'] = details_data.get('title') or details_data.get('name') or details_data.get('original_name')
 
-    for key in ('genres', 'languages', 'countries'):
-        raw = data.get(key)
-        details[key] = [s.strip() for s in raw.split(',')] if raw else []
-    for role in ('director', 'writer', 'producer', 'composer', 'cinematographer', 'cast'):
-        raw = data.get(role)
-        details[role] = [s.strip() for s in raw.split(',')] if raw else []
+    release_date = details_data.get('release_date') or details_data.get('first_air_date')
+    details['release_date'] = release_date
+    details['year'] = int(release_date.split('-')[0]) if release_date else None
 
-    details['plot'] = data.get('plot')
-    details['tagline'] = data.get('tagline')
-    details['box_office'] = (data.get('box_office', 0)) if data.get('box_office') else None
-    raw_dist = data.get('distributors')
-    details['distributors'] = [d.strip() for d in raw_dist.split(',')] if raw_dist else []
-    details['imdb_id'] = data.get('imdb_id')
-    details['tmdb_id'] = data.get('tmdb_id')
+    rating = details_data.get('vote_average')
+    details['rating'] = round(float(rating), 1) if rating else None
+    details['votes'] = details_data.get('vote_count', 0)
 
-    posters = data.get('images', {}).get('posters', {})
-    original_language = data.get('images', {}).get('original_language')
-    poster_url = data.get('poster_url')
-    if not poster_url:
-        for key in ('en', original_language, 'xx'):
-            if key and posters.get(key):
-                poster_url = posters[key][0]
-                break
-    details['poster_url'] = poster_url
+    runtime = details_data.get('runtime')
+    if not runtime and details_data.get('episode_run_time'):
+        runtime = details_data.get('episode_run_time')[0] if details_data.get('episode_run_time') else None
+    details['runtime'] = f"{runtime} min" if runtime else None
 
-    backdrops = data.get('images', {}).get('backdrops', {})
-    original_language = data.get('images', {}).get('original_language')
-    backdrop_url = None
-    for key in ('en', original_language, 'xx'):
-        if key and backdrops.get(key):
-            backdrop_url = backdrops[key][0]
-            break
-    details['backdrop_url'] = backdrop_url
+    details['tmdb_url'] = f"https://www.themoviedb.org/{media_type}/{tmdb_id}"
 
-    details['all_posters'] = posters.get('all', [])
-    details['all_backdrops'] = backdrops.get('all', [])
-    details['raw_posters'] = posters
-    details['raw_backdrops'] = backdrops
-    details['original_language'] = original_language
+    genres = details_data.get('genres', [])
+    details['genres'] = [g.get('name') for g in genres] if genres else []
+
+    details['plot'] = details_data.get('overview')
+    details['tmdb_id'] = tmdb_id
+
+    # Images
+    poster_path = details_data.get('poster_path')
+
+    if poster_path:
+        details['poster_url'] = f"https://image.tmdb.org/t/p/w500{poster_path}"
+    else:
+        details['poster_url'] = None
+
+    # Backdrop Language Priority Logic
+    # 1. Preferred Languages (hi, en, original_language)
+    # 2. No language (clean backdrops, iso_639_1 == None)
+    # 3. Any language
+    # 4. Default backdrop_path
+    backdrop_path = None
+    images = details_data.get('images', {})
+    backdrops = images.get('backdrops', [])
+
+    if backdrops:
+        # Sort by vote_average to get the best ones first
+        sorted_backdrops = sorted(backdrops, key=lambda x: x.get('vote_average', 0), reverse=True)
+        original_language = details_data.get('original_language')
+
+        # Priority 1: Preferred Languages
+        preferred_langs = ['hi', 'en', original_language]
+        for lang in preferred_langs:
+            if backdrop_path: break
+            for bd in sorted_backdrops:
+                if bd.get('iso_639_1') == lang:
+                    backdrop_path = bd.get('file_path')
+                    break
+
+        # Priority 2: No language
+        if not backdrop_path:
+            for bd in sorted_backdrops:
+                if bd.get('iso_639_1') is None:
+                    backdrop_path = bd.get('file_path')
+                    break
+
+        # Priority 3: Any language
+        if not backdrop_path:
+            for bd in sorted_backdrops:
+                if bd.get('iso_639_1') is not None:
+                    backdrop_path = bd.get('file_path')
+                    break
+
+    # Priority 4: Fallback to the default if our search yielded nothing
+    if not backdrop_path:
+        backdrop_path = details_data.get('backdrop_path')
+
+    if backdrop_path:
+        details['backdrop_url'] = f"https://image.tmdb.org/t/p/w1280{backdrop_path}"
+    else:
+        details['backdrop_url'] = None
 
     return details
