@@ -266,72 +266,68 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
         imdb_details = await get_movie_details(base_name) or {}
         tmdb_details = {}
 
-        if TMDB_POSTER:
-            tmdb_details = await get_movie_detailsx(base_name)
-            if tmdb_details.get("error") or not tmdb_details:
-                error_tmdb = True
-                # Smart Retry: Use IMDb corrected title to try TMDB again
-                if imdb_details and imdb_details.get("title"):
-                    corrected_title = imdb_details["title"]
-                    if corrected_title.lower() != base_name.lower():
-                        logger.info(f"Retrying TMDB with corrected title: {corrected_title}")
-                        tmdb_retry = await get_movie_detailsx(corrected_title)
-                        if tmdb_retry and not tmdb_retry.get("error"):
-                            tmdb_details = tmdb_retry
-                            error_tmdb = False
+        # Always fetch TMDB details to get backdrops and fallback info
+        tmdb_details = await get_movie_detailsx(base_name)
+        if tmdb_details.get("error") or not tmdb_details:
+            error_tmdb = True
+            # Smart Retry: Use IMDb corrected title to try TMDB again
+            if imdb_details and imdb_details.get("title"):
+                corrected_title = imdb_details["title"]
+                if corrected_title.lower() != base_name.lower():
+                    logger.info(f"Retrying TMDB with corrected title: {corrected_title}")
+                    tmdb_retry = await get_movie_detailsx(corrected_title)
+                    if tmdb_retry and not tmdb_retry.get("error"):
+                        tmdb_details = tmdb_retry
+                        error_tmdb = False
 
-        # We will determine the "source" based on which poster we end up using or which API succeeds
-        # First preference for poster is TMDB, then IMDB. If TMDB is successful, we try to use its rating/genres.
-        source_is_tmdb = False
+        # User requirement:
+        # First preference for image: TMDB backdrop only. If no TMDB backdrop, then IMDB poster.
+        # First preference for info: IMDB details (rating, genres, runtime). If no IMDB info, then TMDB.
 
         poster_url = None
-        if LANDSCAPE_POSTER:
-             poster_url = tmdb_details.get("backdrop_url")
-             if poster_url: source_is_tmdb = True
-             if not poster_url:
-                 poster_url = imdb_details.get("poster")
+        # Try to get backdrop from TMDB
+        poster_url = tmdb_details.get("backdrop_url")
         if not poster_url:
-             poster_url = tmdb_details.get("poster_url")
-             if poster_url: source_is_tmdb = True
-             if not poster_url:
-                 poster_url = imdb_details.get("poster")
+            # If no backdrop, use IMDb poster
+            poster_url = imdb_details.get("poster")
 
-        # Fallback for source if we didn't find a poster but still have details
-        if not poster_url:
-             if tmdb_details: source_is_tmdb = True
-             elif imdb_details: source_is_tmdb = False
+        # Info preference: IMDB first, then TMDB
+        # We track where the info comes from separately from the image
+        info_source_is_tmdb = False
 
-        if source_is_tmdb:
-            raw_genres = tmdb_details.get("genres", "N/A")
-            if raw_genres in ("N/A", "", None, []) and imdb_details and imdb_details.get("genres"):
-                raw_genres = imdb_details.get("genres")
+        # Check if we have meaningful IMDB info
+        imdb_has_info = bool(imdb_details and (imdb_details.get("rating") or imdb_details.get("genres") or imdb_details.get("runtime")))
+        tmdb_has_info = bool(tmdb_details and not tmdb_details.get("error"))
 
-            rating = str(tmdb_details.get("rating", "N/A"))
-            if rating in ("N/A", "", "None") and imdb_details and imdb_details.get("rating"):
-                rating = str(imdb_details.get("rating"))
-
-            runtime = tmdb_details.get("runtime")
-            if not runtime and imdb_details and imdb_details.get("runtime"):
-                runtime = str(imdb_details.get("runtime"))
-
-            url = tmdb_details.get("tmdb_url", "") or imdb_details.get("url", "")
-            rating_source = "tmdb" if tmdb_details.get("rating") else "imdb"
-
+        if imdb_has_info:
+            info_source_is_tmdb = False
+        elif tmdb_has_info:
+            info_source_is_tmdb = True
         else:
-            raw_genres = imdb_details.get("genres", "N/A")
-            if raw_genres in ("N/A", "", None, []) and tmdb_details and tmdb_details.get("genres"):
-                raw_genres = tmdb_details.get("genres")
+            # If both fail or have no meaningful info, default to IMDB for consistency
+            info_source_is_tmdb = False
 
-            rating = imdb_details.get("rating", "N/A")
-            if rating in ("N/A", "", None) and tmdb_details and tmdb_details.get("rating"):
-                rating = str(tmdb_details.get("rating"))
+        raw_genres = imdb_details.get("genres", "N/A")
+        if raw_genres in ("N/A", "", None, []) and tmdb_has_info and tmdb_details.get("genres"):
+            raw_genres = tmdb_details.get("genres")
 
-            runtime = imdb_details.get("runtime")
-            if not runtime and tmdb_details and tmdb_details.get("runtime"):
-                runtime = str(tmdb_details.get("runtime"))
+        rating = imdb_details.get("rating", "N/A")
+        if rating in ("N/A", "", None) and tmdb_has_info and tmdb_details.get("rating"):
+            rating = str(tmdb_details.get("rating"))
 
-            url = imdb_details.get("url", "") or tmdb_details.get("tmdb_url", "")
-            rating_source = "imdb" if imdb_details.get("rating") else "tmdb"
+        runtime = imdb_details.get("runtime")
+        if not runtime and tmdb_has_info and tmdb_details.get("runtime"):
+            runtime = str(tmdb_details.get("runtime"))
+
+        # For URL and rating source, we use IMDB if available
+        # But if the entire info came from TMDB, then use TMDB url.
+        url = ""
+        if info_source_is_tmdb:
+             url = tmdb_details.get("tmdb_url", "") or imdb_details.get("url", "")
+        else:
+             url = imdb_details.get("url", "") or tmdb_details.get("tmdb_url", "")
+
+        rating_source = "tmdb" if info_source_is_tmdb else "imdb"
 
         if isinstance(raw_genres, str):
             genre_list = [g.strip() for g in raw_genres.split(",")]
@@ -349,7 +345,7 @@ async def _process_with_lock(bot, filename, caption, media_info, base_name, proc
             "runtime": runtime,
             "imdb_url": url, # Kept for backward DB compatibility, stores the actual source URL
             "url": url,
-            "source": "tmdb" if source_is_tmdb else "imdb",
+            "source": "tmdb" if info_source_is_tmdb else "imdb",
             "year": media_info["year"] or imdb_details.get("year"),
             "tag": media_info["tag"],
             "ott_platform": media_info["ott_platform"],
