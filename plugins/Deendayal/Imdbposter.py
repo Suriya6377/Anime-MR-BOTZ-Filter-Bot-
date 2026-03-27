@@ -278,7 +278,7 @@ async def get_movie_detailsx(query, id=False, file=None):
         original_language = details_data.get('original_language')
 
         # Priority 1: Preferred Languages
-        preferred_langs = ['hi', 'en', original_language]
+        preferred_langs = ['en', 'hi', original_language]
         for lang in preferred_langs:
             if backdrop_path: break
             for bd in sorted_backdrops:
