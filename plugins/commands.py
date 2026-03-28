@@ -635,6 +635,9 @@ async def start(client, message):
                 [
                     InlineKeyboardButton('📥 Fast Download', url=lazy_download),
                     InlineKeyboardButton('📺 Watch Online', url=lazy_stream)
+                ],
+                [
+                    InlineKeyboardButton('🔥 ᴍᴏᴠɪᴇ ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ 🔥', url=UPDATE_CHNL_LNK)
                 ]
             ]
             await log_msg.edit_caption(
@@ -710,7 +713,7 @@ async def channel_info(bot, message):
 async def log_file(bot, message):
     """Send log file"""
     try:
-        await message.reply_document('TELEGRAM BOT.LOG')
+        await message.reply_document('TELEGRAM BOT. LOG')
     except Exception as e:
         await message.reply(str(e))
 
