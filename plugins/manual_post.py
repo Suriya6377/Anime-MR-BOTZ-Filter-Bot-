@@ -1,6 +1,6 @@
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ForceReply, CallbackQuery
-from info import ADMINS
+from info import MOVIE_GROUP, ADMINS
 import info
 import datetime
 from plugins.Deendayal.Imdbposter import get_movie_details
@@ -352,7 +352,7 @@ async def publish_post(client, chat_id, data):
         buttons = InlineKeyboardMarkup([[
             InlineKeyboardButton(
                 '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                url=f"https://t.me/Deendayal_Hindi_Movies?start=getfile-{movie_name.replace(' ', '-')}"
+                url=MOVIE_GROUP
             )
         ]])
 

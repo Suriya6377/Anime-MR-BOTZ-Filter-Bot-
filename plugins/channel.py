@@ -7,7 +7,7 @@ from collections import defaultdict
 from plugins.Deendayal.Imdbposter import get_movie_detailsx, fetch_image, get_movie_details
 from database.users_chats_db import db
 from pyrogram import Client, filters, enums
-from info import CHANNELS, MOVIE_UPDATE_CHANNEL, LINK_PREVIEW, ABOVE_PREVIEW, BAD_WORDS, LANDSCAPE_POSTER, TMDB_POSTER, IMDB_POSTER
+from info import MOVIE_GROUP, CHANNELS, MOVIE_UPDATE_CHANNEL, LINK_PREVIEW, ABOVE_PREVIEW, BAD_WORDS, LANDSCAPE_POSTER, TMDB_POSTER, IMDB_POSTER
 from Script import script
 from database.ia_filterdb import save_file
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
@@ -388,7 +388,7 @@ async def send_movie_update(bot, group_id):
             buttons = InlineKeyboardMarkup([[
                 InlineKeyboardButton(
                     '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                    url=f"https://t.me/Deendayal_Hindi_Movies?start=getfile-{group_id.replace(' ', '-')}"
+                    url=MOVIE_GROUP
                 )
             ]])
 
@@ -437,7 +437,7 @@ async def update_movie_message(bot, group_id):
         buttons = InlineKeyboardMarkup([[
             InlineKeyboardButton(
                 '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                url=f"https://t.me/Deendayal_Hindi_Movies?start=getfile-{group_id.replace(' ', '-')}"
+                url=MOVIE_GROUP
             )
         ]])
 
