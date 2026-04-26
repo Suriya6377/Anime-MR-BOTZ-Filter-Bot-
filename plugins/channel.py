@@ -58,10 +58,10 @@ OTT_PLATFORMS = {
     "nf": "Netflix", "netflix": "Netflix",
     "sonyliv": "SonyLiv", "sony": "SonyLiv", "sliv": "SonyLiv",
     "amzn": "Amazon Prime Video", "prime": "Amazon Prime Video", "primevideo": "Amazon Prime Video",
-    "hotstar": "Disney+ Hotstar", "zee5": "Zee5",
+    "hotstar": "Disney+ Hotstar", "zee5": "ZEE5",
     "jio": "JioHotstar", "jhs": "JioHotstar",
     "aha": "Aha", "hbo": "HBO Max", "paramount": "Paramount+", "CR": "Crunchyroll",
-    "ATVP": "Apple TV+", "hoichoi": "Hoichoi", "sunnxt": "Sun NXT", "viki": "Viki"
+    "ATVP": "Apple TV+", "hoichoi": "Hoichoi", "snxt": "Sun NXT", "viki": "Viki"
 }
 
 STANDARD_GENRES = {
