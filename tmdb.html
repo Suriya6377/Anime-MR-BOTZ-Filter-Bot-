@@ -47,7 +47,7 @@
             -webkit-text-fill-color: transparent;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
             text-shadow: 0 0 20px rgba(255, 0, 122, 0.3);
         }
 
@@ -88,9 +88,11 @@
         .section-title {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
             font-size: 18px;
             font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
             margin-bottom: 15px;
             color: #ff80bf;
             text-shadow: 0 0 10px rgba(255, 128, 191, 0.3);
@@ -99,7 +101,7 @@
         .language-options {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 5px;
         }
 
         .glass-btn {
@@ -154,8 +156,9 @@
         }
 
         .tabs {
+            overflow-x: auto;
             display: flex;
-            gap: 10px;
+            gap: 5px;
             margin-bottom: 20px;
             background: rgba(0, 0, 0, 0.2);
             padding: 5px;
@@ -165,17 +168,19 @@
 
         .tab-btn {
             flex: 1;
-            padding: 12px 20px;
+            padding: 8px 10px;
             border: 1px solid transparent;
             background: transparent;
             color: white;
             border-radius: 12px;
             cursor: pointer;
             font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 5px;
             transition: all 0.3s ease;
         }
 
@@ -209,6 +214,16 @@
 
         .grid.backdrops .grid-item {
              aspect-ratio: 16/9;
+        }
+
+        .grid.logos .grid-item {
+             aspect-ratio: 16/9;
+             background: transparent;
+             border: none;
+        }
+
+        .grid.logos img {
+             object-fit: contain;
         }
 
         .grid-item:hover {
@@ -352,6 +367,9 @@
                     <button class="tab-btn" onclick="switchTab('backdrops')">
                         <span>💻</span> Backdrops
                     </button>
+                    <button class="tab-btn" onclick="switchTab('logos')">
+                        <span>🏷️</span> Logos
+                    </button>
                 </div>
 
                 <div class="grid" id="imageGrid">
@@ -433,7 +451,7 @@
             };
 
             // Count images based on current tab
-            const source = currentTab === 'posters' ? currentData.raw_posters : currentData.raw_backdrops;
+            const source = currentTab === 'posters' ? currentData.raw_posters : (currentTab === 'backdrops' ? currentData.raw_backdrops : currentData.raw_logos);
             if (!source) return;
 
             // All
@@ -463,7 +481,7 @@
         function switchTab(tab) {
             currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            const btn = tab === 'posters' ? document.querySelector('.tab-btn:first-child') : document.querySelector('.tab-btn:nth-child(2)');
+            const btn = tab === 'posters' ? document.querySelector('.tab-btn:first-child') : (tab === 'backdrops' ? document.querySelector('.tab-btn:nth-child(2)') : document.querySelector('.tab-btn:nth-child(3)'));
             btn.classList.add('active');
 
             // Re-render lang options because counts change
@@ -475,13 +493,14 @@
             const grid = document.getElementById('imageGrid');
             grid.innerHTML = '';
 
-            if (currentTab === 'posters') {
-                grid.classList.remove('backdrops');
-            } else {
+            grid.classList.remove('backdrops', 'logos');
+            if (currentTab === 'backdrops') {
                 grid.classList.add('backdrops');
+            } else if (currentTab === 'logos') {
+                grid.classList.add('logos');
             }
 
-            const source = currentTab === 'posters' ? currentData.raw_posters : currentData.raw_backdrops;
+            const source = currentTab === 'posters' ? currentData.raw_posters : (currentTab === 'backdrops' ? currentData.raw_backdrops : currentData.raw_logos);
             const images = source[currentLang] || [];
 
             images.forEach(url => {
