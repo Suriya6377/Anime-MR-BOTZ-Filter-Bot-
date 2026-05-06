@@ -204,6 +204,7 @@ async def api_poster_search(request):
 
             raw_posters = {"all": []}
             raw_backdrops = {"all": []}
+            raw_logos = {"all": []}
 
             def process_list(source_list, target_dict):
                 for img in source_list:
@@ -223,6 +224,7 @@ async def api_poster_search(request):
 
             process_list(img_data.get("posters", []), raw_posters)
             process_list(img_data.get("backdrops", []), raw_backdrops)
+            process_list(img_data.get("logos", []), raw_logos)
 
             return web.json_response({
                 "title": title,
@@ -231,7 +233,8 @@ async def api_poster_search(request):
                 "rating": rating,
                 "tmdb_id": tmdb_id,
                 "raw_posters": raw_posters,
-                "raw_backdrops": raw_backdrops
+                "raw_backdrops": raw_backdrops,
+                "raw_logos": raw_logos
             })
 
     except Exception as e:
