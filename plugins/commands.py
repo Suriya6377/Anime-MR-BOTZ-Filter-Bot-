@@ -1655,7 +1655,9 @@ async def features_callback(client, callback_query):
          InlineKeyboardButton('Fᴏɴᴛ 🎨', callback_data='font_info')],
         [InlineKeyboardButton('TMDB 🎬', web_app=WebAppInfo(url=f"{URL}tmdb")),
          InlineKeyboardButton('Sᴛɪᴄᴋᴇʀ ID 🪪', callback_data='sticker_info')],
-        [InlineKeyboardButton('Sᴛʀᴇᴀᴍ 🖥️', callback_data='stream_info')],
+        [InlineKeyboardButton('Sᴛʀᴇᴀᴍ 🖥️', callback_data='stream_info'),
+         InlineKeyboardButton('JSON 🗃️', callback_data='json_info')],
+        [InlineKeyboardButton('Eᴍᴏᴊɪ ID 🎃', callback_data='emoji_info')],
         [InlineKeyboardButton('🔙 Back', callback_data='start')]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
@@ -1711,6 +1713,28 @@ async def sticker_info_callback(client, callback_query):
     buttons = [[InlineKeyboardButton('🔙 Back', callback_data='features')]]
     reply_markup = InlineKeyboardMarkup(buttons)
     text = "<b>Now send me the sticker to get its ID...</b>"
+    if callback_query.message.photo:
+        await callback_query.message.edit_caption(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    else:
+        await callback_query.message.edit_text(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("json_info"))
+async def json_info_callback(client, callback_query):
+    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='features')]]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    if callback_query.message.photo:
+        await callback_query.message.edit_caption(script.JSON_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    else:
+        await callback_query.message.edit_text(script.JSON_TXT, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
+    await callback_query.answer()
+
+@Client.on_callback_query(filters.regex("emoji_info"))
+async def emoji_info_callback(client, callback_query):
+    temp.EMOJI_ID[callback_query.from_user.id] = True
+    buttons = [[InlineKeyboardButton('🔙 Back', callback_data='features')]]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    text = "<b>Now send me the custom emoji to get its ID...</b>"
     if callback_query.message.photo:
         await callback_query.message.edit_caption(text, reply_markup=reply_markup, parse_mode=enums.ParseMode.HTML)
     else:

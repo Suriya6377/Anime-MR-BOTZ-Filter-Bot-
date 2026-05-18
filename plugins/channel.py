@@ -52,14 +52,16 @@ CAPTION_LANGUAGES = {
     "urdu": "Urdu", "urdu": "Urdu",
     "korean": "Korean", "korean": "Korean",
     "Japanese": "Japanese", "japanese": "Japanese",
+    "multi audio": "Multi Audio",
+    "dual audio": "Dual Audio",
 }
 
 OTT_PLATFORMS = {
     "nf": "Netflix", "netflix": "Netflix",
     "sonyliv": "SonyLiv", "sony": "SonyLiv", "sliv": "SonyLiv",
     "amzn": "Amazon Prime Video", "prime": "Amazon Prime Video", "primevideo": "Amazon Prime Video",
-    "hotstar": "Disney+ Hotstar", "zee5": "ZEE5",
-    "jio": "JioHotstar", "jhs": "JioHotstar",
+    "hotstar": "Disney+ Hotstar", "ZEE5": "ZEE5",
+    "jio": "JioHotstar", "jhs": "JioHotstar", "SM": "ShemarooMe",
     "aha": "Aha", "hbo": "HBO Max", "paramount": "Paramount+", "CR": "Crunchyroll",
     "ATVP": "Apple TV+", "hoichoi": "Hoichoi", "snxt": "Sun NXT", "viki": "Viki"
 }
@@ -137,7 +139,7 @@ def schedule_update(bot, group_id, delay=5):
 
 def extract_media_info(filename: str, caption: str):
     filename = normalize(clean_mentions_links(filename).title())
-    caption_clean = clean_mentions_links(caption).lower() if caption else ""
+    caption_clean = normalize(clean_mentions_links(caption)).lower() if caption else ""
     unified = f"{caption_clean} {filename.lower()}".strip()
 
     season = episode = year = None

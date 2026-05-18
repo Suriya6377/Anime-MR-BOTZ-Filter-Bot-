@@ -184,7 +184,41 @@ async def api_poster_search(request):
             year = release_date.split("-")[0] if release_date else ""
             rating = str(round(item.get("vote_average", 0), 1))
 
-            # 3. Get Images
+            # 3. Get Extra Details (Genres, Runtime, Vote Count, URL, OTT)
+            details_url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}"
+            details_params = {
+                "api_key": TMDB_API_KEY,
+                "append_to_response": "watch/providers"
+            }
+            genres = []
+            runtime = ""
+            vote_count = ""
+            homepage_url = ""
+            ott_platforms = []
+
+            async with session.get(details_url, params=details_params) as details_resp:
+                if details_resp.status == 200:
+                    details_data = await details_resp.json()
+                    genres = [g.get("name") for g in details_data.get("genres", [])]
+
+                    if media_type == "movie":
+                        r = details_data.get("runtime")
+                        if r:
+                            h = r // 60
+                            m = r % 60
+                            runtime = f"{h}h {m}m" if h > 0 else f"{m}m"
+                    else:
+                        r = details_data.get("episode_run_time")
+                        if r and len(r) > 0:
+                            runtime = f"{r[0]}m/ep"
+
+                    vote_count = details_data.get("vote_count", "")
+                    homepage_url = details_data.get("homepage") or f"https://www.themoviedb.org/{media_type}/{tmdb_id}"
+
+                    providers = details_data.get("watch/providers", {}).get("results", {}).get("IN", {})
+                    ott_platforms = [p.get("provider_name") for p in providers.get("flatrate", [])]
+
+            # 4. Get Images
             img_url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}/images"
 
             # Broad list of languages to support the frontend filters
@@ -199,7 +233,7 @@ async def api_poster_search(request):
                      return web.json_response({"error": "TMDB Images Failed"}, status=img_resp.status)
                 img_data = await img_resp.json()
 
-            # 4. Process Images
+            # 5. Process Images
             base_url = "https://image.tmdb.org/t/p/original"
 
             raw_posters = {"all": []}
@@ -232,6 +266,11 @@ async def api_poster_search(request):
                 "release_date": release_date,
                 "rating": rating,
                 "tmdb_id": tmdb_id,
+                "genres": genres,
+                "runtime": runtime,
+                "vote_count": vote_count,
+                "url": homepage_url,
+                "ott": ott_platforms,
                 "raw_posters": raw_posters,
                 "raw_backdrops": raw_backdrops,
                 "raw_logos": raw_logos
@@ -295,6 +334,185 @@ async def api_tmdb_images(request):
                     return web.json_response(data)
                 else:
                     return web.json_response({"error": f"TMDB Error: {resp.status}"}, status=resp.status)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+
+@routes.get("/api/tmdb/browse")
+async def api_tmdb_browse(request):
+    category = request.rel_url.query.get("category")
+    page = request.rel_url.query.get("page", "1")
+    country = request.rel_url.query.get("country", "")
+
+    url = ""
+    params = {"api_key": TMDB_API_KEY, "page": page, "language": "en-US"}
+
+    if country == "IN":
+        params["with_origin_country"] = "IN"
+        params["watch_region"] = "IN"
+
+    if category == "trending":
+        url = "https://api.themoviedb.org/3/trending/all/day"
+    elif category == "popular":
+        url = "https://api.themoviedb.org/3/discover/movie" if country == "IN" else "https://api.themoviedb.org/3/movie/popular"
+        if country == "IN":
+            params["sort_by"] = "popularity.desc"
+    elif category == "top_rated":
+        url = "https://api.themoviedb.org/3/discover/movie" if country == "IN" else "https://api.themoviedb.org/3/movie/top_rated"
+        if country == "IN":
+            params["sort_by"] = "vote_average.desc"
+            params["vote_count.gte"] = 50
+    elif category == "now_playing":
+        url = "https://api.themoviedb.org/3/discover/movie" if country == "IN" else "https://api.themoviedb.org/3/movie/now_playing"
+        if country == "IN":
+            params["with_release_type"] = "2|3" # Theatrical
+    elif category == "in_theaters":
+        url = "https://api.themoviedb.org/3/discover/movie"
+        params["with_release_type"] = "2|3" # Theatrical
+        # TMDB's "now_playing" does not always match exactly to what is currently in theaters depending on region,
+        # but release type 2|3 is the most standard way to check for theatrical releases.
+    elif category == "upcoming":
+        url = "https://api.themoviedb.org/3/discover/movie" if country == "IN" else "https://api.themoviedb.org/3/movie/upcoming"
+        if country == "IN":
+            import datetime
+            today = datetime.date.today().strftime("%Y-%m-%d")
+            params["primary_release_date.gte"] = today
+            params["sort_by"] = "popularity.desc"
+    elif category == "movies":
+        url = "https://api.themoviedb.org/3/discover/movie"
+        params["sort_by"] = "popularity.desc"
+    elif category == "tv":
+        url = "https://api.themoviedb.org/3/discover/tv"
+        params["sort_by"] = "popularity.desc"
+    elif category == "anime":
+        url = "https://api.themoviedb.org/3/discover/tv"
+        params["with_genres"] = "16"
+        params["with_original_language"] = "ja"
+    elif category == "web_series":
+        url = "https://api.themoviedb.org/3/discover/tv"
+        params["with_networks"] = "213|1024|2739|453"
+    else:
+        return web.json_response({"error": "Invalid category"}, status=400)
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    results = []
+                    for item in data.get("results", []):
+                        if item.get("poster_path"):
+                            results.append({
+                                "id": item.get("id"),
+                                "title": item.get("title") or item.get("name"),
+                                "poster_path": item.get("poster_path"),
+                                "media_type": item.get("media_type") or ("tv" if category in ["tv", "anime", "web_series"] else "movie"),
+                                "year": (item.get("release_date") or item.get("first_air_date") or "")[:4],
+                                "rating": round(item.get("vote_average", 0), 1)
+                            })
+                    return web.json_response({"results": results})
+                else:
+                    return web.json_response({"error": f"TMDB Error: {resp.status}"}, status=resp.status)
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+@routes.get("/api/tmdb/details")
+async def api_tmdb_details(request):
+    tmdb_id = request.rel_url.query.get("id")
+    media_type = request.rel_url.query.get("type", "movie")
+
+    if not tmdb_id:
+        return web.json_response({"error": "Missing ID"}, status=400)
+
+    try:
+        details_url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}"
+        images_url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}/images"
+
+        params = {
+            "api_key": TMDB_API_KEY,
+            "append_to_response": "watch/providers"
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(details_url, params=params) as resp:
+                if resp.status == 200:
+                    details = await resp.json()
+                else:
+                    return web.json_response({"error": "Details fetch failed"}, status=resp.status)
+
+            img_params = {"api_key": TMDB_API_KEY, "include_image_language": "en,hi,kn,te,ta,ml,bn,gu,mr,pa,null"}
+            async with session.get(images_url, params=img_params) as resp:
+                if resp.status == 200:
+                    images = await resp.json()
+                else:
+                    images = {"posters": [], "backdrops": [], "logos": []}
+
+        genres = [g['name'] for g in details.get('genres', [])]
+
+        raw_posters = {"all": []}
+        raw_backdrops = {"all": []}
+        raw_logos = {"all": []}
+
+        for img in images.get("posters", []):
+            lang = img.get("iso_639_1") or "null"
+            if lang not in raw_posters:
+                raw_posters[lang] = []
+            url = f"/api/img?path={img['file_path']}&size=original"
+            raw_posters[lang].append(url)
+            raw_posters["all"].append(url)
+
+        for img in images.get("backdrops", []):
+            lang = img.get("iso_639_1") or "null"
+            if lang not in raw_backdrops:
+                raw_backdrops[lang] = []
+            url = f"/api/img?path={img['file_path']}&size=original"
+            raw_backdrops[lang].append(url)
+            raw_backdrops["all"].append(url)
+
+        for img in images.get("logos", []):
+            lang = img.get("iso_639_1") or "null"
+            if lang not in raw_logos:
+                raw_logos[lang] = []
+            url = f"/api/img?path={img['file_path']}&size=original"
+            raw_logos[lang].append(url)
+            raw_logos["all"].append(url)
+
+        year = ""
+        if media_type == "movie" and details.get("release_date"):
+            year = details["release_date"][:4]
+        elif media_type == "tv" and details.get("first_air_date"):
+            year = details["first_air_date"][:4]
+
+        runtime = ""
+        if media_type == "movie" and details.get("runtime"):
+            h = details["runtime"] // 60
+            m = details["runtime"] % 60
+            runtime = f"{h}h {m}m"
+        elif media_type == "tv" and details.get("episode_run_time") and len(details["episode_run_time"]) > 0:
+            runtime = f"{details['episode_run_time'][0]} min/ep"
+
+        # Get OTT info using TMDB's watch/providers
+        ott_platforms = []
+        providers = details.get("watch/providers", {}).get("results", {}).get("IN", {})
+        if providers:
+            ott_platforms = [p.get("provider_name") for p in providers.get("flatrate", [])]
+
+        return web.json_response({
+            "title": details.get("title") or details.get("name"),
+            "year": year,
+            "release_date": details.get("release_date") or details.get("first_air_date"),
+            "rating": round(details.get("vote_average", 0), 1),
+            "vote_count": details.get("vote_count", 0),
+            "genres": genres,
+            "runtime": runtime,
+            "url": details.get("homepage"),
+            "tmdb_id": tmdb_id,
+            "ott": ott_platforms,
+            "raw_posters": raw_posters,
+            "raw_backdrops": raw_backdrops,
+            "raw_logos": raw_logos
+        })
+
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
