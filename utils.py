@@ -102,6 +102,7 @@ class temp(object):
     IMDB_CAP = {}
     VERIFY = {}
     STICKER_ID = {}
+    EMOJI_ID = {}
 
 
 async def is_req_subscribed(bot, query):
