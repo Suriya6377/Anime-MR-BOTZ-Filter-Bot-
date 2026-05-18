@@ -24,7 +24,7 @@ async def delete_message_later(reply_msg: Message, command_msg: Message, delay: 
     except Exception as e:
         logger.error(f"Error deleting messages: {e}")
 
-@Client.on_message(filters.command(['stream', 's']) & filters.private, group=1)
+@Client.on_message(filters.command(['stream', 's']) & filters.private)
 async def stream_command_handler(client: Client, message: Message):
     try:
         # Check if the message itself is a media file with the command as a caption,
