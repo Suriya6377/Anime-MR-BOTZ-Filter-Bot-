@@ -409,7 +409,8 @@ async def send_movie_update(bot, group_id):
                     "chat_id": MOVIE_UPDATE_CHANNEL,
                     "text": text,
                     "reply_markup": buttons,
-                    "parse_mode": enums.ParseMode.HTML
+                    "parse_mode": enums.ParseMode.HTML,
+                    "disable_web_page_preview": True
                 }
                 if movie_doc.get("poster_url") and LINK_PREVIEW:
                     send_params["invert_media"] = ABOVE_PREVIEW
