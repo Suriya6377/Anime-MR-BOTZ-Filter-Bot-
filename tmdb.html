@@ -392,9 +392,14 @@
             <div id="loader" class="loader"></div>
         </div>
 
-        <button id="searchBtn" class="glass-btn search-btn" onclick="performSearch(document.getElementById('searchInput').value)">
-            Search
-        </button>
+        <div style="display: flex; gap: 10px; width: 100%;">
+            <button id="searchBtn" class="glass-btn search-btn" style="flex: 1;" onclick="performSearch(document.getElementById('searchInput').value)">
+                Search
+            </button>
+            <button id="searchResBtn" class="glass-btn search-btn" style="flex: 1;" onclick="performTmdbSearch(document.getElementById('searchInput').value)">
+                Search Results
+            </button>
+        </div>
 
 
         <div class="glass-panel" id="categoriesPanel" style="margin-top: 20px;">
@@ -624,6 +629,62 @@
             }
         });
 
+        async function performTmdbSearch(query) {
+            if (!query) return;
+
+            loader.style.display = 'block';
+            contentArea.style.display = 'none';
+            welcomeMsg.style.display = 'none';
+            document.getElementById('categoriesPanel').style.display = 'block';
+            const grid = document.getElementById('browseGrid');
+            const loadMoreBtn = document.getElementById('loadMoreContainer');
+            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+
+            // clear active state from category buttons
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            currentCategory = null;
+
+            grid.innerHTML = '<div id="browseLoading" style="text-align:center; grid-column: 1/-1; padding: 20px;"><div class="loader" style="display:inline-block; position:relative; right:0; transform:none;"></div></div>';
+
+            try {
+                const response = await fetch(`/api/tmdb/search?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                grid.innerHTML = '';
+
+                if (data.error) {
+                    grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ff4444;">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                const results = (data.results || []).filter(item => item.media_type === 'movie' || item.media_type === 'tv');
+
+                if (results.length > 0) {
+                    results.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'browse-item';
+                        div.onclick = () => fetchDetails(item.id, item.media_type);
+
+                        const imgUrl = item.poster_path ? `/api/img?path=${item.poster_path}&size=w342` : 'https://via.placeholder.com/342x513?text=No+Poster';
+
+                        div.innerHTML = `
+                            <img src="${imgUrl}" loading="lazy">
+                            <div class="browse-title">${item.title || item.name}</div>
+                            <div class="browse-rating">⭐ ${item.vote_average ? item.vote_average.toFixed(1) : 'N/A'}</div>
+                        `;
+                        grid.appendChild(div);
+                    });
+                } else {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; opacity: 0.7;">No results found</div>';
+                }
+            } catch (error) {
+                console.error(error);
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #ff4444;">Error fetching data</div>';
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
         async function performSearch(query) {
             if (!query) return;
 
@@ -669,7 +730,7 @@
 
             const urlDiv = document.getElementById('mUrl');
             if (currentData.url) {
-                urlDiv.innerHTML = `URL: <a href="${currentData.url}" target="_blank" style="color: #4a90e2; text-decoration: none;">Link</a>`;
+                urlDiv.innerHTML = `URL: <a href="${currentData.url}" target="_blank" style="color: #4a90e2; text-decoration: none;">TMDB Link</a>`;
             } else {
                 urlDiv.innerHTML = '';
             }
