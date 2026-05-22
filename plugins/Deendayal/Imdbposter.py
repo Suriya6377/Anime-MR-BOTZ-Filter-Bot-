@@ -286,17 +286,17 @@ async def get_movie_detailsx(query, id=False, file=None):
                     backdrop_path = bd.get('file_path')
                     break
 
-        # Priority 2: No language
+        # Priority 2: Any language
         if not backdrop_path:
             for bd in sorted_backdrops:
-                if bd.get('iso_639_1') is None:
+                if bd.get('iso_639_1') is not None and bd.get('iso_639_1') != 'xx':
                     backdrop_path = bd.get('file_path')
                     break
 
-        # Priority 3: Any language
+        # Priority 3: No language
         if not backdrop_path:
             for bd in sorted_backdrops:
-                if bd.get('iso_639_1') is not None:
+                if bd.get('iso_639_1') is None or bd.get('iso_639_1') == 'xx':
                     backdrop_path = bd.get('file_path')
                     break
 
