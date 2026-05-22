@@ -213,7 +213,7 @@ async def api_poster_search(request):
                             runtime = f"{r[0]}m/ep"
 
                     vote_count = details_data.get("vote_count", "")
-                    homepage_url = details_data.get("homepage") or f"https://www.themoviedb.org/{media_type}/{tmdb_id}"
+                    homepage_url = f"https://www.themoviedb.org/{media_type}/{tmdb_id}"
 
                     providers = details_data.get("watch/providers", {}).get("results", {}).get("IN", {})
                     ott_platforms = [p.get("provider_name") for p in providers.get("flatrate", [])]
@@ -221,8 +221,8 @@ async def api_poster_search(request):
             # 4. Get Images
             img_url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}/images"
 
-            # Broad list of languages to support the frontend filters
-            langs = "en,null,hi,kn,te,ta,ml,bn,gu,mr,pa,fr,es,de,ru,ja,ko,zh"
+            # Broad list of languages to fetch all available images
+            langs = "en,hi,kn,te,ta,ml,bn,gu,mr,pa,es,fr,de,it,ja,ko,zh,null"
             img_params = {
                 "api_key": TMDB_API_KEY,
                 "include_image_language": langs
@@ -317,7 +317,7 @@ async def api_tmdb_images(request):
 
         # Logic to handle different language selections
         if language == "all":
-             include_image_language = "en,hi,kn,te,ta,ml,bn,gu,mr,pa,null"
+             include_image_language = "en,hi,kn,te,ta,ml,bn,gu,mr,pa,es,fr,de,it,ja,ko,zh,null"
         elif language == "null":
              include_image_language = "null"
         else:
@@ -440,7 +440,8 @@ async def api_tmdb_details(request):
                 else:
                     return web.json_response({"error": "Details fetch failed"}, status=resp.status)
 
-            img_params = {"api_key": TMDB_API_KEY, "include_image_language": "en,hi,kn,te,ta,ml,bn,gu,mr,pa,null"}
+            langs = "en,hi,kn,te,ta,ml,bn,gu,mr,pa,es,fr,de,it,ja,ko,zh,null"
+            img_params = {"api_key": TMDB_API_KEY, "include_image_language": langs}
             async with session.get(images_url, params=img_params) as resp:
                 if resp.status == 200:
                     images = await resp.json()
@@ -505,7 +506,7 @@ async def api_tmdb_details(request):
             "vote_count": details.get("vote_count", 0),
             "genres": genres,
             "runtime": runtime,
-            "url": details.get("homepage"),
+            "url": f"https://www.themoviedb.org/{media_type}/{tmdb_id}",
             "tmdb_id": tmdb_id,
             "ott": ott_platforms,
             "raw_posters": raw_posters,
