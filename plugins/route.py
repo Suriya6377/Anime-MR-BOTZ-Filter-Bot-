@@ -221,11 +221,10 @@ async def api_poster_search(request):
             # 4. Get Images
             img_url = f"https://api.themoviedb.org/3/{media_type}/{tmdb_id}/images"
 
-            # Broad list of languages to fetch all available images
-            langs = "en,hi,kn,te,ta,ml,bn,gu,mr,pa,es,fr,de,it,ja,ko,zh,null"
+            # Empty include_image_language parameter fetches all available languages from TMDB
             img_params = {
                 "api_key": TMDB_API_KEY,
-                "include_image_language": langs
+                "include_image_language": ""
             }
 
             async with session.get(img_url, params=img_params) as img_resp:
@@ -317,7 +316,7 @@ async def api_tmdb_images(request):
 
         # Logic to handle different language selections
         if language == "all":
-             include_image_language = "en,hi,kn,te,ta,ml,bn,gu,mr,pa,es,fr,de,it,ja,ko,zh,null"
+             include_image_language = "" # Empty string fetches all languages
         elif language == "null":
              include_image_language = "null"
         else:
@@ -440,8 +439,7 @@ async def api_tmdb_details(request):
                 else:
                     return web.json_response({"error": "Details fetch failed"}, status=resp.status)
 
-            langs = "en,hi,kn,te,ta,ml,bn,gu,mr,pa,es,fr,de,it,ja,ko,zh,null"
-            img_params = {"api_key": TMDB_API_KEY, "include_image_language": langs}
+            img_params = {"api_key": TMDB_API_KEY, "include_image_language": ""} # Empty string fetches all languages
             async with session.get(images_url, params=img_params) as resp:
                 if resp.status == 200:
                     images = await resp.json()
