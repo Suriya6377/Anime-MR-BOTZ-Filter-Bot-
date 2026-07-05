@@ -387,12 +387,20 @@ async def send_movie_update(bot, group_id):
                 return None
 
             text = generate_movie_message(movie_doc, group_id)
-            buttons = InlineKeyboardMarkup([[
-                InlineKeyboardButton(
-                    '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                    url=MOVIE_GROUP
-                )
-            ]])
+            buttons = InlineKeyboardMarkup([
+                #[
+                    #InlineKeyboardButton(
+                        #'ɢᴇᴛ ғɪʟᴇs',
+                        #url=f"https://t.me/{temp.U_NAME}?start=getfile-{group_id.replace(' ', '-')}"
+                    #)
+                #],
+                [
+                    InlineKeyboardButton(
+                        '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
+                        url=MOVIE_GROUP
+                    )
+                ]
+            ])
 
             if movie_doc.get("poster_url") and not LINK_PREVIEW:
                 resized_poster = await fetch_image(movie_doc["poster_url"], size=(2560, 1440) if LANDSCAPE_POSTER else (853, 1280))
@@ -437,12 +445,20 @@ async def update_movie_message(bot, group_id):
             return
 
         text = generate_movie_message(movie_doc, group_id)
-        buttons = InlineKeyboardMarkup([[
-            InlineKeyboardButton(
-                '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                url=MOVIE_GROUP
-            )
-        ]])
+        buttons = InlineKeyboardMarkup([
+            #[
+                #InlineKeyboardButton(
+                    #'ɢᴇᴛ ғɪʟᴇs',
+                    #url=f"https://t.me/{temp.U_NAME}?start=getfile-{group_id.replace(' ', '-')}"
+                #)
+            #],
+            [
+                InlineKeyboardButton(
+                    '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
+                    url=MOVIE_GROUP
+                )
+            ]
+        ])
 
         message_id = movie_doc.get("message_id")
         is_photo = movie_doc.get("is_photo", False)
