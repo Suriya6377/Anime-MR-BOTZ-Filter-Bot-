@@ -1,572 +1,391 @@
- 
+from pyrogram import Client, filters, enums
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ForceReply, CallbackQuery
+from info import MOVIE_GROUP, ADMINS
+from utils import temp
+import info
+import datetime
+from plugins.Deendayal.Imdbposter import get_movie_details
+
+# Handle potential missing MOVIE_UPDATE_CHANNEL gracefully to avoid ImportError
+MOVIE_UPDATE_CHANNEL = getattr(info, 'MOVIE_UPDATE_CHANNEL', None)
+
+# In-memory dictionary to store ongoing post sessions.
+# Format: {user_id: {"message_id": int, "data": {}, "chat_id": int, "waiting_for": str, "prompt_message_id": int}}
+POST_SESSIONS = {}
+
+# A prompt mapping for when a user clicks a button
+PROMPTS = {
+    "poster": "Send Poster (Photo or URL):",
+    "movie_name": "Enter Movie Name (e.g., Sirens Kiss S01):",
+    "imdb_link": "Enter IMDb Link:",
+    "tmdb_link": "Enter TMDb Link:",
+    "genres": "Enter Genres:",
+    "ott": "Enter OTT Platform:",
+    "quality": "Enter Quality:",
+    "audio": "Enter Audio:",
+    "rating": "Enter Rating:",
+    "duration": "Enter Duration:",
+    "episodes": "Enter Episodes:"
+}
 
 
+def generate_post_text(data):
+    ist = datetime.timezone(datetime.timedelta(hours=5, minutes=30))
+    now = datetime.datetime.now(ist)
+    date_str = now.strftime("%d %b %Y")
+    time_str = now.strftime("%I:%M:%S %p")
+
+    movie_name = data.get("movie_name", "Unknown")
+    if movie_name == "N/A":
+        movie_name = "Unknown"
+
+    poster_url = data.get("poster_url")
+    imdb_link = data.get("imdb_link", "#")
+    tmdb_link = data.get("tmdb_link", "#")
+    genres = data.get("genres", "N/A")
+    ott = data.get("ott", "N/A")
+    quality = data.get("quality", "N/A")
+    audio = data.get("audio", "N/A")
+    rating = data.get("rating", "N/A")
+    duration = data.get("duration", "N/A")
+    episodes = data.get("episodes", "N/A")
+
+    text = f"<blockquote><b>📥 𝖭𝖤𝖶 𝖥𝖨𝖫𝖤 𝖠𝖣𝖣𝖤𝖣 ✅</b></blockquote>\n\n"
+
+    # Dynamically add IMDb or TMDb links
+    links_block = ""
+    if imdb_link != "#":
+        links_block += f"⭐ <b><a href='{imdb_link}'>ɪᴍᴅʙ ɪɴғᴏ</a></b> "
+    if tmdb_link != "#":
+        links_block += f"⭐ <b><a href='{tmdb_link}'>ᴛᴍᴅʙ ɪɴғᴏ</a></b> "
+
+    # Default fallback if neither is provided
+    if not links_block:
+         links_block = f"⭐ <b><a href='#'>ɪᴍᴅʙ ɪɴғᴏ</a></b>"
+
+    text += f"🫥  <b><code>{movie_name}</code> ⿻ </b> | <a href='{poster_url or '#'}'></a>{links_block.strip()}\n"
+
+    if genres != "N/A":
+        text += f"\n<b>🎭 ɢᴇɴʀᴇs : {genres}</b>\n"
+
+    if ott != "N/A":
+        text += f"<b>🌐 ᴏᴛᴛ    : {ott}</b>\n\n"
+
+    text += f"<b>📽 ǫᴜᴀʟɪᴛʏ : {quality}</b>\n\n"
+    text += f"<b>🔊 ᴀᴜᴅɪᴏ   : {audio}</b>\n\n"
+
+    if rating != "N/A":
+        text += f"<b>🎞 ʀᴀᴛɪɴɢ  : {rating}</b>"
+
+    if duration != "N/A":
+        text += f"\n<b>⏱ ᴅᴜʀᴀᴛɪᴏɴ : </b><b>{duration}</b>"
+
+    if episodes != "N/A":
+        text += f"\n<b>🎬 ᴇᴘɪsᴏᴅᴇs : <b>{episodes}</b></b>\n"
+    else:
+        text += "\n"
+
+    text += "<blockquote><b>〽️ Powered by - <a href='https://t.me/Nobita_Files_Filter_bot'>D͜͡e͜͡e͜͡n͜͡d͜͡a͜͡y͜͡a͜͡l͜͡ d͜͡h͜͡a͜͡k͜͡a͜͡d͜͡</a></b></blockquote>\n"
+    text += f"<b>🕒 {date_str} | {time_str}</b>\n"
+
+    return text
 
 
+def get_post_keyboard(data):
+    def get_text(key, label):
+        val = data.get(key)
+        if val and val != "N/A" and val != "#":
+            if key == "poster":
+                if data.get("poster_photo"):
+                    return f"✅ {label} (Photo)"
+                else:
+                    return f"✅ {label} (URL)"
+            return f"✅ {label}"
+        return f"❌ {label}"
+
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton(get_text("movie_name", "🫥 ᴍᴏᴠɪᴇ ɴᴀᴍᴇ"), callback_data="mp_movie_name"),
+         InlineKeyboardButton(get_text("poster", "🖼️ ᴘᴏsᴛᴇʀ"), callback_data="mp_poster")],
+        [InlineKeyboardButton(get_text("imdb_link", "⭐ Iᴍᴅʙ ɪɴғᴏ"), callback_data="mp_imdb_link"),
+         InlineKeyboardButton(get_text("tmdb_link", "⭐ ᴛᴍᴅʙ ɪɴғᴏ"), callback_data="mp_tmdb_link")],
+        [InlineKeyboardButton(get_text("genres", "🎭 ɢᴇɴʀᴇs"), callback_data="mp_genres"),
+         InlineKeyboardButton(get_text("ott", "🌐 ᴏᴛᴛ"), callback_data="mp_ott")],
+        [InlineKeyboardButton(get_text("quality", "📽 ǫᴜᴀʟɪᴛʏ"), callback_data="mp_quality"),
+         InlineKeyboardButton(get_text("audio", "🔊 ᴀᴜᴅɪᴏ"), callback_data="mp_audio")],
+        [InlineKeyboardButton(get_text("rating", "🎞 ʀᴀᴛɪɴɢ"), callback_data="mp_rating"),
+         InlineKeyboardButton(get_text("duration", "⏱ ᴅᴜʀᴀᴛɪᴏɴ"), callback_data="mp_duration")],
+        [InlineKeyboardButton(get_text("episodes", "🎬 ᴇᴘɪsᴏᴅᴇs"), callback_data="mp_episodes")],
+        [InlineKeyboardButton(f"🔄 Aᴜᴛᴏ Fᴇᴛᴄʜ: {'Oɴ' if data.get('auto_fetch', False) else 'Oғғ'}", callback_data="mp_toggle_fetch")],
+        [InlineKeyboardButton("✅ Pᴜʙʟɪsʜ Pᴏsᴛ", callback_data="mp_publish"),
+         InlineKeyboardButton("🗑 Cᴀɴᴄᴇʟ", callback_data="mp_cancel")]
+    ])
 
 
-<!DOCTYPE html>
-<html
-  lang="en"
-    class="html-auth"
-  
-  data-color-mode="auto" data-light-theme="light" data-dark-theme="dark"
-  data-a11y-animated-images="system" data-a11y-link-underlines="true"
-  
-  >
+@Client.on_message(filters.command("post") & filters.user(ADMINS))
+async def start_manual_post(client, message):
+    if not MOVIE_UPDATE_CHANNEL:
+        await message.reply_text("❌ MOVIE_UPDATE_CHANNEL is not set in info.py. Please set it before using this command.")
+        return
 
+    user_id = message.from_user.id
+    if user_id in POST_SESSIONS:
+        # Instead of blocking, we overwrite the previous session
+        pass
 
+    data = {k: "N/A" for k in PROMPTS.keys() if k != "poster"}
+    data["poster"] = None
+    data["imdb_link"] = "#"
+    data["tmdb_link"] = "#"
+    data["auto_fetch"] = False
 
+    preview_text = "<b>Live Preview:</b>\n\n" + generate_post_text(data) + "\n\n<i>Click the buttons below to fill in the details. Once ready, click Publish.</i>"
 
-  <head>
-    <meta charset="utf-8">
-  <link rel="dns-prefetch" href="https://github.githubassets.com">
-  <link rel="dns-prefetch" href="https://avatars.githubusercontent.com">
-  <link rel="dns-prefetch" href="https://github-cloud.s3.amazonaws.com">
-  <link rel="dns-prefetch" href="https://user-images.githubusercontent.com/">
-  <link rel="preconnect" href="https://github.githubassets.com" crossorigin>
-  <link rel="preconnect" href="https://avatars.githubusercontent.com">
-
-  
-
-  <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/light-4fded0090af0ad58.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/light_high_contrast-cf8e26bc17e62ebc.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/dark-06381ff23d863842.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/dark_high_contrast-9023e6605402defb.css" /><link data-color-theme="light" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light-4fded0090af0ad58.css" /><link data-color-theme="light_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_high_contrast-cf8e26bc17e62ebc.css" /><link data-color-theme="light_colorblind" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_colorblind-3a437477a570cc40.css" /><link data-color-theme="light_colorblind_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_colorblind_high_contrast-39b6c209db5491c9.css" /><link data-color-theme="light_tritanopia" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_tritanopia-3822234d6c03b00b.css" /><link data-color-theme="light_tritanopia_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_tritanopia_high_contrast-33857254a8064bf7.css" /><link data-color-theme="dark" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark-06381ff23d863842.css" /><link data-color-theme="dark_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_high_contrast-9023e6605402defb.css" /><link data-color-theme="dark_colorblind" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_colorblind-37023bf69d8e0e34.css" /><link data-color-theme="dark_colorblind_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_colorblind_high_contrast-486bd43e01a2c0ec.css" /><link data-color-theme="dark_tritanopia" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_tritanopia-838ba2a5070c5b09.css" /><link data-color-theme="dark_tritanopia_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_tritanopia_high_contrast-2aa7245dc545d61f.css" /><link data-color-theme="dark_dimmed" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_dimmed-29ef2eb185e7de1c.css" /><link data-color-theme="dark_dimmed_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_dimmed_high_contrast-8eed6b212f10f1b9.css" />
-
-  <style type="text/css">
-    :root {
-      --tab-size-preference: 4;
+    msg = await message.reply_text(
+        preview_text,
+        reply_markup=get_post_keyboard(data),
+        parse_mode=enums.ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+    POST_SESSIONS[user_id] = {
+        "message_id": msg.id,
+        "data": data,
+        "chat_id": message.chat.id,
+        "waiting_for": None,
+        "prompt_message_id": None
     }
 
-    pre, code {
-      tab-size: var(--tab-size-preference);
-    }
-  </style>
 
-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-primitives-b39ad27f3538ace3.css" />
-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-afede9cc1831f1df.css" />
-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/global-eff6b778655b1531.css" />
-    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/github-eab9c5888b163e42.css" />
-  
-
-  
-
-  <script type="application/json" id="client-env">{"locale":"en","featureFlags":["actions_custom_images_storage_billing_ui_visibility","actions_enable_background_steps","actions_image_version_event","actions_workflow_language_service_allow_concurrency_queue","agent_author_search_expansion","agent_author_search_expansion_ui_pulls","agent_conflict_resolution","alternate_user_config_repo","artifact_ui_v2","billing_billable_licenses_cost_center_bucket_fix","billing_cost_center_user_level_budgets","billing_discount_threshold_notification","billing_user_level_budgets","billing_user_level_budgets_manage","code_scanning_dfa_degraded_experience_notice","code_view_raf_sticky_lines","codespaces_prebuild_region_target_update","codeview_sidebar_combined_payload","coding_agent_model_selection","coding_agent_model_selection_all_skus","comment_viewer_copy_raw_markdown","contentful_primer_code_blocks","copilot_agent_snippy","copilot_api_agentic_issue_marshal_yaml","copilot_ask_mode_dropdown","copilot_automation_suggest_tools_enabled","copilot_automations_pagination","copilot_automations_suggested_automations","copilot_chat_attach_multiple_images","copilot_chat_auto_mode_picker_paid","copilot_chat_category_rate_limit_messages","copilot_chat_clear_model_selection_for_default_change","copilot_chat_contextual_suggestions_updated","copilot_chat_docked_panel","copilot_chat_enable_tool_call_logs","copilot_chat_input_commands","copilot_chat_interspersed_tool_calls","copilot_chat_max_upsell","copilot_chat_model_picker_info_popover","copilot_chat_models_browser_cache","copilot_chat_opening_thread_switch","copilot_chat_prettify_pasted_code","copilot_chat_reduce_quota_checks","copilot_chat_vision_dotcom_chat_ga_gate","copilot_chat_vision_in_claude","copilot_chat_vision_preview_gate","copilot_cli_install_cta_max_plan","copilot_cloud_agent_always_categorize_models_in_model_picker","copilot_custom_copilots","copilot_custom_copilots_feature_preview","copilot_diff_explain_conversation_intent","copilot_diff_reference_context","copilot_duplicate_thread","copilot_extensions_removal_on_marketplace","copilot_file_block_ref_matching","copilot_fix_blank_side_panel","copilot_fix_failed_workflows","copilot_fix_failed_workflows_all_skus","copilot_ftp_hyperspace_upgrade_prompt","copilot_hide_hovercard","copilot_immersive_code_block_transition_wrap","copilot_immersive_embedded_deferred_payload","copilot_immersive_embedded_draggable","copilot_immersive_embedded_header_button","copilot_immersive_embedded_implicit_references","copilot_immersive_embedded_skip_copilot_api_token_for_dotcom_context","copilot_immersive_file_block_transition_open","copilot_immersive_file_preview_keep_mounted","copilot_immersive_hide_column_right_without_thread","copilot_immersive_job_result_preview","copilot_immersive_suggestion_pills","copilot_immersive_task_hyperlinking","copilot_immersive_task_within_chat_thread","copilot_mc_cli_resume_any_users_task","copilot_mc_nudges","copilot_mission_control_agent_filtering","copilot_mission_control_always_send_integration_id","copilot_mission_control_environment_list_icons","copilot_mission_control_initial_data_spinner","copilot_mission_control_needs_attention","copilot_mission_control_sandbox_remote_bypass","copilot_mission_control_session_filters","copilot_mission_control_task_alive_updates","copilot_mission_control_task_sharing","copilot_org_policy_page_focus_mode","copilot_plans_signups_enabled","copilot_pr_chat_enhancements","copilot_prominent_upgrade_button","copilot_quota_banner_pr_files_changed","copilot_redirect_header_button_to_agents","copilot_resource_panel","copilot_share_active_subthread","copilot_spaces_ga","copilot_spaces_individual_policies_ga","copilot_spark_empty_state","copilot_spark_handle_nil_friendly_name","copilot_swe_agent_authorization_status_ui","copilot_swe_agent_hide_model_picker_if_only_auto","copilot_swe_agent_pr_comment_model_picker","copilot_swe_agent_pull_request_merged_trigger","copilot_swe_agent_pull_request_opened_trigger","copilot_swe_agent_pull_request_synchronize_trigger","copilot_swe_agent_use_subagents","copilot_task_api_github_rest_style","copilot_token_based_billing","copilot_unconfigured_is_inherited","copilot_user_can_upgrade_plan_field","copilot_workbench_ubb","custom_properties_core_reusable_property_value_field","dashboard_indexeddb_caching","dashboard_lists_max_age_filter","dashboard_universe_2025_feedback_dialog","flex_cta_groups_mvp","flex_suite_overview","ga_enterprise_teams_ui","global_nav_react","global_nav_responsive_create_menu","hyperspace_2025_logged_out_batch_1","hyperspace_2025_logged_out_batch_2","hyperspace_2025_logged_out_batch_3","in_product_messaging_datadog_monitoring","ipm_budget_deep_linking","ipm_global_transactional_message_agents","ipm_global_transactional_message_copilot","ipm_global_transactional_message_issues","ipm_global_transactional_message_prs","ipm_global_transactional_message_repos","ipm_global_transactional_message_spaces","issue_cca_modal_open","issue_cca_multi_assign_modal","issue_cca_visualization","issue_fields_global_search","issue_fields_index_pills","issue_inline_avatars","issue_pinned_views","issue_pinned_views_index_page","issue_pinned_views_preheat_sidebar_links","issue_pinned_views_projects_react","issue_relative_time_micro","issues_expanded_file_types","issues_lazy_load_comment_box_suggestions","issues_react_chrome_container_query_fix","landing_pages_ninetailed","landing_pages_web_vitals_tracking","lifecycle_label_name_updates","low_quality_classifier","marketing_pages_search_explore_provider","memex_default_issue_create_repository","memex_live_update_hovercard","memex_mwl_filter_field_delimiter","memex_remove_deprecated_type_issue","merge_status_header_feedback","oauth_authorize_clickjacking_protection","octocaptcha_origin_optimization","primer_react_css_anchor_positioning","property_definition_empty_state_suggestions","prs_css_anchor_positioning","pull_request_copilot_attribution_header","react_blob_isolate_code_lines","react_data_router_tanstack_allowed","react_editor_actions_sidebar","react_editor_devcontainer_sidebar","react_router_external_route_handoff","react_sandbox_future_tanstack","repos_contributors_limited_default_range","rules_insights_filter_bar_created","sample_network_conn_type","secret_scanning_pattern_alerts_link","security_center_artifact_filters_popover","semantic_similarity_duplicate_issue_detection","session_logs_ungroup_reasoning_text","site_banner_desktop_copilot_app","site_github_app_ga_page","site_global_nav_spark_models_removed","spark_prompt_secret_scanning","spark_server_connection_status","suppress_automated_browser_vitals","swp_forms_disable_octocaptcha","turbo_progress_bar_transform","viewscreen_sandbox","warn_inaccessible_attachments","webp_support","workbench_store_readonly"],"copilotApiOverrideUrl":"https://api.githubcopilot.com","cmcApiUrl":"https://api.github.com/cmc_internal/api"}</script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/high-contrast-cookie-a5e0a53475dda603.js"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/wp-runtime-8add559093be9fda.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/fetch-utilities-a37106741bcc477d.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/78205-490cbc32cb03f2c4.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/85924-fb319ed7734a3255.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/34646-fd025d89aebf481f.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/environment-206299963839690a.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/runtime-helpers-1ab84bfcdfd252a7.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/296-dd7acbc3c57bc2df.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/57131-96925ee146d82566.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/816-267fa8a626344744.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/78121-700198d991c19201.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/81683-3566d15213106a0d.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/64458-988347c24883c3dc.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/46740-245323eebf4a2bd5.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/3650-2d2c2aa6afec76de.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/17127-d486438dd582dbb8.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/github-elements-908aaaa22fbfa2a1.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/element-registry-7ff7735dd6f83cb1.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/react-core-9bccf6fab86332ba.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/react-lib-57bed375ade723a7.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/63143-7622d55d24560a56.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/79039-3efc4ce0c2830d00.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/88475-734f67255a069671.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/2887-6bb5fc2f7d7910bf.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/62220-0c9944955b4e2cbb.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/26533-c0816c13ac9e6327.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/7088-4eaf1fbdb5e0697b.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/9506-5679f156315d844a.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/53320-0a81d3275826594e.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/46287-3f3e28b04377fdb2.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/23548-06460d6ad6134b8e.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/89627-d6568840e3302a2b.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/55682-4f9c532916993730.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/49029-7ca2ead5f497f031.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/99328-0f824473476788e3.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/behaviors-5d83773da9c1079f.js" defer="defer"></script>
-<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/react-core.0e2552c483430348.module.css" />
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/61272-f2158b5d00e77e7b.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/notifications-global-af6906205a03177b.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/57639-c11f2fce6b8a5462.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/98304-e396ebf96aff23e2.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/19930-c2749e0e22d03aed.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/37438-ef8a676c1fc3fbdf.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/settings-9ba183e6c8755e74.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/70666-d9f2187307ac669b.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/89564-f2b4b3a866e42fd2.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/sessions-aef37199526c3a66.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/68522-99aa6a59cc02fc04.js" defer="defer"></script>
-<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/signup-ca9d9c174c065847.js" defer="defer"></script>
-  
-
-  <title>Sign in to GitHub · GitHub</title>
-
-
-
-  <meta name="route-pattern" content="/login(.:format)" data-turbo-transient>
-  <meta name="route-controller" content="sessions" data-turbo-transient>
-  <meta name="route-action" content="new" data-turbo-transient>
-  <meta name="fetch-nonce" content="v2:dc0240a2-11bf-e76a-5fa9-207ae58d9290">
-
-    
-  <meta name="current-catalog-service-hash" content="701273d4944fb23919c770da2da3f33b6da9ed8e668f7249090e3e9f429343b5">
-
-
-  <meta name="request-id" content="3047:173D28:CA2061:F64947:6A4A207A" data-turbo-transient="true" /><meta name="html-safe-nonce" content="a6ef4889be4983f86d642a9285e6f9dab714eb221f56702b75eb2d6e94dd9cea" data-turbo-transient="true" /><meta name="visitor-payload" content="eyJyZWZlcnJlciI6Imh0dHBzOi8vZ2l0aHViLmNvbS9OaXJhamswMDc3L0RlZW5kYXlhbC1PbGQtL2Jsb2IvRGVlbmRheWFsX2RoYWthZC9wbHVnaW5zL21hbnVhbF9wb3N0LnB5IiwicmVxdWVzdF9pZCI6IjMwNDc6MTczRDI4OkNBMjA2MTpGNjQ5NDc6NkE0QTIwN0EiLCJ2aXNpdG9yX2lkIjoiNjM5NTMwOTkzMDIwMDM2MzIzNiIsInJlZ2lvbl9lZGdlIjoiY2VudHJhbGluZGlhIiwicmVnaW9uX3JlbmRlciI6ImNlbnRyYWx1cyJ9" data-turbo-transient="true" /><meta name="visitor-hmac" content="407c004ea7134ad7171eb2a967526d5530fc69f8294dae90c1ab2a065cd45dee" data-turbo-transient="true" />
-
-
-
-
-  <meta name="github-keyboard-shortcuts" content="copilot" data-turbo-transient="true" />
-  
-
-  <meta name="selected-link" value="/login" data-turbo-transient>
-  <link rel="assets" href="https://github.githubassets.com/">
-
-    <meta name="google-site-verification" content="Apib7-x98H0j5cPqHWwSMm6dNU4GmODRoqxLiDzdx9I">
-
-<meta name="octolytics-url" content="https://collector.github.com/github/collect" />
-
-
-
-
-
-  <meta name="analytics-location-query-strip" content="true" data-turbo-transient="true" />
-
-  
-
-
-
-
-    <meta name="user-login" content="">
-
-  
-
-    <meta name="viewport" content="width=device-width">
-
-    
-
-      <meta name="description" content="GitHub is where people build software. More than 150 million people use GitHub to discover, fork, and contribute to over 420 million projects.">
-
-      <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="GitHub">
-
-    <link rel="fluid-icon" href="https://github.com/fluidicon.png" title="GitHub">
-    <meta property="fb:app_id" content="1401488693436528">
-    
-
-      <meta property="og:url" content="https://github.com">
-  <meta property="og:site_name" content="GitHub">
-  <meta property="og:title" content="Build software better, together">
-  <meta property="og:description" content="GitHub is where people build software. More than 150 million people use GitHub to discover, fork, and contribute to over 420 million projects.">
-  <meta property="og:image" content="https://github.githubassets.com/assets/github-logo-55c5b9a1fe52.png">
-  <meta property="og:image:type" content="image/png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="1200">
-  <meta property="og:image" content="https://github.githubassets.com/assets/github-mark-57519b92ca4e.png">
-  <meta property="og:image:type" content="image/png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="620">
-  <meta property="og:image" content="https://github.githubassets.com/assets/github-octocat-13c86b8b336d.png">
-  <meta property="og:image:type" content="image/png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="620">
-
-  <meta property="twitter:site" content="github">
-  <meta property="twitter:site:id" content="13334762">
-  <meta property="twitter:creator" content="github">
-  <meta property="twitter:creator:id" content="13334762">
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:title" content="GitHub">
-  <meta property="twitter:description" content="GitHub is where people build software. More than 150 million people use GitHub to discover, fork, and contribute to over 420 million projects.">
-  <meta property="twitter:image" content="https://github.githubassets.com/assets/github-logo-55c5b9a1fe52.png">
-  <meta property="twitter:image:width" content="1200">
-  <meta property="twitter:image:height" content="1200">
-
-
-
-
-      <meta name="hostname" content="github.com">
-
-
-
-        <meta name="expected-hostname" content="github.com">
-
-
-  <meta http-equiv="x-pjax-version" content="86a6a06945a012b6c4032cc80be05e05819033bdca9bcc3001a35a8f13570fb3" data-turbo-track="reload">
-  <meta http-equiv="x-pjax-csp-version" content="306a0c2aa15459bcb1610c25a1433713ef76296ff95e109d6c768ce26a6655d4" data-turbo-track="reload">
-  <meta http-equiv="x-pjax-css-version" content="2e8ed682fb38662a1477985f0c302d19b27aa87d4f375b635a3f739da2e60922" data-turbo-track="reload">
-  <meta http-equiv="x-pjax-js-version" content="32bb824b1b6eca924e1bff9b514b06db6b0f109aee81754b85528e4b9fbd34a4" data-turbo-track="reload">
-
-  <meta name="turbo-cache-control" content="no-preview" data-turbo-transient="">
-
-      <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/github-eab9c5888b163e42.css" />
-
-
-
-      <link rel="canonical" href="https://github.com/login" data-turbo-transient>
-
-
-    <meta name="turbo-body-classes" content="logged-out env-production page-responsive session-authentication">
-  <meta name="disable-turbo" content="false">
-
-
-  <meta name="browser-stats-url" content="https://api.github.com/_private/browser/stats">
-
-  <meta name="browser-errors-url" content="https://api.github.com/_private/browser/errors">
-
-    <meta name="release" content="d13470d0bd03ea530bcdbb4359887275338bdd51" data-turbo-track="reload">
-  <meta name="ui-target" content="full">
-
-  <link rel="mask-icon" href="https://github.githubassets.com/assets/pinned-octocat-093da3e6fa40.svg" color="#000000">
-  <link rel="alternate icon" class="js-site-favicon" type="image/png" href="https://github.githubassets.com/favicons/favicon.png">
-  <link rel="icon" class="js-site-favicon" type="image/svg+xml" href="https://github.githubassets.com/favicons/favicon.svg" data-base-href="https://github.githubassets.com/favicons/favicon">
-
-<meta name="theme-color" content="#1e2327">
-<meta name="color-scheme" content="light dark" />
-
-
-  <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials">
-
-  </head>
-
-  <body class="logged-out env-production page-responsive session-authentication" style="word-wrap: break-word;" >
-    <div data-turbo-body class="logged-out env-production page-responsive session-authentication" style="word-wrap: break-word;" >
-      <div id="__primerPortalRoot__" style="z-index: 1000; position: absolute; width: 100%;" data-turbo-permanent></div>
-      
-
-    <div class="position-relative header-wrapper js-header-wrapper ">
-      <a href="#start-of-content" data-skip-target-assigned="false" class="px-2 tmp-py-4 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js-skip-to-content">Skip to content</a>
-
-      <span data-view-component="true" class="progress-pjax-loader Progress position-fixed width-full">
-    <span style="width: 0%;" data-view-component="true" class="Progress-item progress-pjax-loader-bar left-0 top-0 color-bg-accent-emphasis"></span>
-</span>      
-      <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-react-css.0f1f30982ae65fea.module.css" />
-<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/keyboard-shortcuts-dialog.fceceb899f3dc6af.module.css" />
-
-<react-partial
-  partial-name="keyboard-shortcuts-dialog"
-  data-ssr="false"
-  data-attempted-ssr="false"
-  data-react-profiling="false"
->
-  
-  <script type="application/json" data-target="react-partial.embeddedData">{"props":{"docsUrl":"https://docs.github.com/get-started/accessibility/keyboard-shortcuts"}}</script>
-  <div data-target="react-partial.reactRoot"></div>
-</react-partial>
-
-
-
-
-
-      
-
-          <div class="authentication-header-page" role="banner">
-
-</div>
-
-
-      <div hidden="hidden" data-view-component="true" class="js-stale-session-flash stale-session-flash flash flash-warn flash-full">
-  
-        <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-alert">
-    <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
-</svg>
-        <span class="js-stale-session-flash-signed-in" hidden>You signed in with another tab or window. <a class="Link--inTextBlock" href="">Reload</a> to refresh your session.</span>
-        <span class="js-stale-session-flash-signed-out" hidden>You signed out in another tab or window. <a class="Link--inTextBlock" href="">Reload</a> to refresh your session.</span>
-        <span class="js-stale-session-flash-switched" hidden>You switched accounts on another tab or window. <a class="Link--inTextBlock" href="">Reload</a> to refresh your session.</span>
-
-    <button id="icon-button-f2fbcc64-5d44-471a-ad06-06cfc9cd977b" aria-labelledby="tooltip-d1743e1d-4bbd-4533-b8e1-8c7b5839967f" type="button" data-view-component="true" class="Button Button--iconOnly Button--invisible Button--medium flash-close js-flash-close">  <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x Button-visual">
-    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
-</svg>
-</button><tool-tip id="tooltip-d1743e1d-4bbd-4533-b8e1-8c7b5839967f" for="icon-button-f2fbcc64-5d44-471a-ad06-06cfc9cd977b" popover="manual" data-direction="s" data-type="label" data-view-component="true" class="sr-only position-absolute">Dismiss alert</tool-tip>
-
-
-  
-</div>
-    </div>
-
-  <div id="start-of-content" class="show-on-focus"></div>
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-  <div
-    class="application-main "
-    data-commit-hovercards-enabled
-    data-discussion-hovercards-enabled
-    data-issue-and-pr-hovercards-enabled
-    data-project-hovercards-enabled
-  >
-      <main>
-        
-
-<div data-test-selector="login-standard-view" data-hpc="true" class="authentication ">
-    <div class="authentication-header ">
-            <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-react-css.0f1f30982ae65fea.module.css" />
-<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/sessions-auth-header.9d122d6c9aad8afb.module.css" />
-
-<react-partial
-  partial-name="sessions-auth-header"
-  data-ssr="true"
-  data-attempted-ssr="true"
-  data-react-profiling="false"
->
-  
-  <script type="application/json" data-target="react-partial.embeddedData">{"props":{"variant":"github","avatarUrl":null,"userName":null,"title":"Sign in to GitHub","description":null}}</script>
-  <div data-target="react-partial.reactRoot"><div class="SessionsAuthHeader-module__authFormHeader__S9PBN"><div class="SessionsAuthHeader-module__authFormHeaderIcon__NP4aI"><div class="SessionsAuthHeader-module__authFormAvatarWrapperStatic__YE9pe"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-mark-github SessionsAuthHeader-module__avatarCoinGithub__n0H61" viewBox="0 0 24 24" width="48" height="48" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943"></path></svg></div></div><div class="SessionsAuthHeader-module__authFormHeaderContent__wtmqP"><h1 class="SessionsAuthHeader-module__authFormHeaderTitle__rVSNG">Sign in to GitHub</h1></div></div></div>
-</react-partial>
-
-
-
-    </div>
-
-    <div class="authentication-body authentication-body--with-form new-session">
-          <div id="js-flash-container" class="flash-container" data-turbo-replace>
-
-
-
-  <template class="js-flash-template">
-    
-<div class="flash flash-full   {{ className }}">
-  <div >
-    <button autofocus class="flash-close js-flash-close" type="button" aria-label="Dismiss this message">
-      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
-    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
-</svg>
-    </button>
-    <div aria-atomic="true" role="alert" class="js-flash-alert">
-      
-      <div>{{ message }}</div>
-
-    </div>
-  </div>
-</div>
-  </template>
-</div>
-
-
-    <div class="flash js-transform-notice" hidden>
-      <button class="flash-close js-flash-close" type="button" aria-label="Dismiss this message">
-        <svg aria-label="Dismiss" role="img" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
-    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
-</svg>
-      </button>
-    </div>
-      
-<!-- '"` --><!-- </textarea></xmp> --></option></form><form data-turbo="false" action="/session" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="6f3z5DDrJM_NNOkprgJPYJvefAaPBRclyejkV8aEPMd_s2VAoTQKkXvzU9rKSy1mDj53S10cYk-xlDxEFytoHw" />  <div>
-
-  <input type="hidden" name="add_account" id="add_account" autocomplete="off" class="form-control" />
-
-    <label for="login_field">
-      Username or email address
-    </label>
-    <input type="text" name="login" id="login_field" autocapitalize="off" autocorrect="off" autocomplete="username" class="form-control  js-login-field" autofocus="autofocus" required="required" />
-  </div>
-
-
-  <div class="position-relative">
-    <label for="password">
-      Password
-    </label>
-    <input type="password" name="password" id="password" class="form-control form-control js-password-field" autocomplete="current-password" required="required" />
-    <a class="label-link position-absolute top-0 right-0" id="forgot-password" href="/password_reset">Forgot password?</a>
-    
-<input type="hidden" name="webauthn-conditional" value="undefined">
-<input type="hidden" class="js-support" name="javascript-support" value="unknown">
-<input type="hidden" class="js-webauthn-support" name="webauthn-support" value="unknown">
-<input type="hidden" class="js-webauthn-iuvpaa-support" name="webauthn-iuvpaa-support" value="unknown">
-<input type="hidden" name="return_to" id="return_to" value="https://github.com/Nirajk0077/Deendayal-Old-/raw/refs/heads/Deendayal_dhakad/plugins/manual_post.py" autocomplete="off" class="form-control" />
-<input type="hidden" name="allow_signup" id="allow_signup" autocomplete="off" class="form-control" />
-<input type="hidden" name="client_id" id="client_id" autocomplete="off" class="form-control" />
-<input type="hidden" name="integration" id="integration" autocomplete="off" class="form-control" />
-<input type="text" name="required_field_3eb8" hidden="hidden" class="form-control" /><input type="hidden" name="timestamp" value="1783242874292" autocomplete="off" class="form-control" /><input type="hidden" name="timestamp_secret" value="ffd67e257ee4e3510c21474706d1d88a014f0b2b824fffc4f90d074d0ed06108" autocomplete="off" class="form-control" />
-
-  </div>
-
-  <div>
-    <input type="submit" name="commit" value="Sign in" class="btn btn-primary btn-block js-sign-in-button" data-disable-with="Signing in…" data-signin-label="Sign in" data-sso-label="Sign in with your identity provider" development="false" disable-emu-sso="false" />
-  </div>
-</form>  <webauthn-status class="js-webauthn-login-emu-control">
-      <include-fragment data-target="webauthn-status.fragment" data-src="/u2f/login_fragment?disable_signup=false&amp;is_emu_login=false&amp;mobile_ios=false&amp;return_to=https%3A%2F%2Fgithub.com%2FNirajk0077%2FDeendayal-Old-%2Fraw%2Frefs%2Fheads%2FDeendayal_dhakad%2Fplugins%2Fmanual_post.py" data-nonce="v2:dc0240a2-11bf-e76a-5fa9-207ae58d9290" data-view-component="true">
-  
-  <div data-show-on-forbidden-error hidden>
-    <div class="Box">
-  <div class="blankslate-container">
-    <div data-view-component="true" class="blankslate blankslate-spacious color-bg-default rounded-2">
-      
-
-      <h3 data-view-component="true" class="blankslate-heading">        Uh oh!
-</h3>
-      <p data-view-component="true" class="blankslate-description">        <p class="color-fg-muted my-2 mb-2 ws-normal">There was an error while loading. <a class="Link--inTextBlock" data-turbo="false" href="" aria-label="Please reload this page">Please reload this page</a>.</p>
-</p>
-
-</div>  </div>
-</div>  </div>
-</include-fragment>
-  </webauthn-status>
-
-
-
-    </div>
-
-    <div class="authentication-footer ">
-                <div class="authentication-login-footer-links">
-          <p class="mt-1 mb-0 p-0">
-            New to GitHub?
-              <a data-ga-click="Sign in, switch to sign up" data-hydro-click="{&quot;event_type&quot;:&quot;authentication.click&quot;,&quot;payload&quot;:{&quot;location_in_page&quot;:&quot;sign in switch to sign up&quot;,&quot;repository_id&quot;:null,&quot;auth_type&quot;:&quot;SIGN_UP&quot;,&quot;originating_url&quot;:&quot;https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FNirajk0077%2FDeendayal-Old-%2Fraw%2Frefs%2Fheads%2FDeendayal_dhakad%2Fplugins%2Fmanual_post.py&quot;,&quot;user_id&quot;:null}}" data-hydro-click-hmac="1eafb03868608a13a6cc4ddbd93f5105a621ffd0682063f9c9c830e0b1090c6b" href="/signup?return_to=https%3A%2F%2Fgithub.com%2FNirajk0077%2FDeendayal-Old-%2Fraw%2Frefs%2Fheads%2FDeendayal_dhakad%2Fplugins%2Fmanual_post.py&amp;source=login">Create an account</a>
-          </p>
-          </div>
-            <webauthn-subtle class="js-webauthn-subtle" hidden>
-    <p class="mb-0 mt-0 js-webauthn-subtle-emu-control">
-      <button data-action="click:webauthn-subtle#prompt" type="button" data-view-component="true" class="Button--link Button--medium Button">  <span class="Button-content">
-    <span class="Button-label">Sign in with a passkey</span>
-  </span>
-</button>
-    </p>
-  </webauthn-subtle>
-
-
-    </div>
-</div>
-      </main>
-  </div>
-
-          <div class="footer-session-authentication" role="contentinfo">
-    <ul class="footer-session-authentication-links">
-        <li>
-          <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to Terms&quot;,&quot;label&quot;:&quot;text:terms&quot;}" href="https://docs.github.com/site-policy/github-terms/github-terms-of-service" data-view-component="true" class="Link--secondary Link">Terms</a>
-        </li>
-
-        <li>
-          <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to privacy&quot;,&quot;label&quot;:&quot;text:privacy&quot;}" href="https://docs.github.com/site-policy/privacy-policies/github-privacy-statement" data-view-component="true" class="Link--secondary Link">Privacy</a>
-        </li>
-
-        <li>
-          <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to docs&quot;,&quot;label&quot;:&quot;text:docs&quot;}" href="https://docs.github.com" data-view-component="true" class="Link--secondary Link">Docs</a>
-        </li>
-
-        <li>
-            <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to contact&quot;,&quot;label&quot;:&quot;text:contact&quot;}" href="https://support.github.com" data-view-component="true" class="Link--secondary Link">Contact GitHub Support</a>
-        </li>
-
-          <li class="mx-2" >
-  <cookie-consent-link>
-    <button
-      type="button"
-      class="Link--secondary underline-on-hover border-0 p-0 color-bg-transparent"
-      data-action="click:cookie-consent-link#showConsentManagement"
-      data-analytics-event="{&quot;location&quot;:&quot;footer&quot;,&quot;action&quot;:&quot;cookies&quot;,&quot;context&quot;:&quot;subfooter&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;label&quot;:&quot;cookies_link_subfooter_footer&quot;}"
-    >
-       Manage cookies
-    </button>
-  </cookie-consent-link>
-</li>
-
-<li class="mx-2">
-  <cookie-consent-link>
-    <button
-      type="button"
-      class="Link--secondary underline-on-hover border-0 p-0 color-bg-transparent text-left"
-      data-action="click:cookie-consent-link#showConsentManagement"
-      data-analytics-event="{&quot;location&quot;:&quot;footer&quot;,&quot;action&quot;:&quot;dont_share_info&quot;,&quot;context&quot;:&quot;subfooter&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;label&quot;:&quot;dont_share_info_link_subfooter_footer&quot;}"
-    >
-      Do not share my personal information
-    </button>
-  </cookie-consent-link>
-</li>
-
-    </ul>
-  </div>
-
-
-    <ghcc-consent id="ghcc" class="position-fixed bottom-0 left-0" style="z-index: 999999"
-      data-locale="en"
-      data-initial-cookie-consent-allowed=""
-      data-cookie-consent-required="false"
-    ></ghcc-consent>
-
-
-
-
-  <div id="ajax-error-message" class="ajax-error-message flash flash-error" hidden>
-    <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-alert">
-    <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
-</svg>
-    <button type="button" class="flash-close js-ajax-error-dismiss" aria-label="Dismiss error">
-      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
-    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
-</svg>
-    </button>
-    You can’t perform that action at this time.
-  </div>
-
-    <template id="site-details-dialog">
-  <details class="details-reset details-overlay details-overlay-dark lh-default color-fg-default hx_rsm" open>
-    <summary role="button" aria-label="Close dialog"></summary>
-    <details-dialog class="Box Box--overlay d-flex flex-column anim-fade-in fast hx_rsm-dialog hx_rsm-modal">
-      <button class="Box-btn-octicon m-0 btn-octicon position-absolute right-0 top-0" type="button" aria-label="Close dialog" data-close-dialog>
-        <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
-    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
-</svg>
-      </button>
-      <div class="octocat-spinner tmp-my-6 js-details-dialog-spinner"></div>
-    </details-dialog>
-  </details>
-</template>
-
-    <div class="Popover js-hovercard-content position-absolute" style="display: none; outline: none;">
-  <div class="Popover-message Popover-message--bottom-left Popover-message--large Box color-shadow-large" style="width:360px;">
-  </div>
-</div>
-
-    <template id="snippet-clipboard-copy-button">
-  <div class="zeroclipboard-container position-absolute right-0 top-0">
-    <clipboard-copy aria-label="Copy code to clipboard" class="ClipboardButton btn js-clipboard-copy m-2 p-0" data-copy-feedback="Copied!" data-tooltip-direction="w">
-      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon m-2 tmp-m-2">
-    <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
-</svg>
-      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check js-clipboard-check-icon color-fg-success d-none m-2 tmp-m-2">
-    <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
-</svg>
-    </clipboard-copy>
-  </div>
-</template>
-<template id="snippet-clipboard-copy-button-unpositioned">
-  <div class="zeroclipboard-container">
-    <clipboard-copy aria-label="Copy code to clipboard" class="ClipboardButton btn btn-invisible js-clipboard-copy m-2 p-0 d-flex flex-justify-center flex-items-center" data-copy-feedback="Copied!" data-tooltip-direction="w">
-      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon">
-    <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
-</svg>
-      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check js-clipboard-check-icon color-fg-success d-none">
-    <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
-</svg>
-    </clipboard-copy>
-  </div>
-</template>
-
-
-
-
-    </div>
-    <div id="js-global-screen-reader-notice" class="sr-only mt-n1" aria-live="polite" aria-atomic="true" ></div>
-    <div id="js-global-screen-reader-notice-assertive" class="sr-only mt-n1" aria-live="assertive" aria-atomic="true"></div>
-  </body>
-</html>
-
-
-  <microsoft-analytics>
-  </microsoft-analytics>
+@Client.on_callback_query(filters.regex(r"^mp_") & filters.user(ADMINS))
+async def handle_post_callback(client, callback_query: CallbackQuery):
+    user_id = callback_query.from_user.id
+    if user_id not in POST_SESSIONS:
+        await callback_query.answer("No active post session.", show_alert=True)
+        return
+
+    session = POST_SESSIONS[user_id]
+
+    if session["message_id"] != callback_query.message.id:
+        await callback_query.answer("This is not your current active session. Send /post again.", show_alert=True)
+        return
+
+    action = callback_query.data.replace("mp_", "")
+
+    if action == "cancel":
+        del POST_SESSIONS[user_id]
+        await callback_query.message.edit_text("Post session cancelled.")
+        await callback_query.answer()
+        return
+
+    if action == "toggle_fetch":
+        session["data"]["auto_fetch"] = not session["data"].get("auto_fetch", False)
+        preview_text = "<b>Live Preview:</b>\n\n" + generate_post_text(session["data"]) + "\n\n<i>Click the buttons below to fill in the details. Once ready, click Publish.</i>"
+        try:
+            await callback_query.message.edit_text(
+                text=preview_text,
+                reply_markup=get_post_keyboard(session["data"]),
+                parse_mode=enums.ParseMode.HTML,
+                disable_web_page_preview=True
+            )
+        except Exception:
+            pass
+        await callback_query.answer("Auto Fetch toggled!")
+        return
+
+    if action == "publish":
+        data = session["data"]
+        # Basic validation
+        if not data.get("movie_name") or data.get("movie_name") == "N/A":
+            await callback_query.answer("Movie Name is required!", show_alert=True)
+            return
+
+        await callback_query.message.edit_text("Publishing post...")
+        del POST_SESSIONS[user_id]
+        await publish_post(client, callback_query.message.chat.id, data)
+        await callback_query.answer()
+        return
+
+    # Set waiting state
+    session["waiting_for"] = action
+
+    prompt_text = PROMPTS.get(action, "Enter value:")
+
+    # Show current value if it exists and isn't a placeholder
+    current_val = session["data"].get(action)
+    current_val_text = ""
+    if current_val and current_val not in ["N/A", "#"]:
+        if action == "poster" and session["data"].get("poster_photo"):
+            current_val_text = "\n\n**Current Value:** `(Photo)`"
+        elif action == "poster" and session["data"].get("poster_url"):
+            current_val_text = f"\n\n**Current Value:** `{session['data']['poster_url']}`"
+        else:
+            current_val_text = f"\n\n**Current Value:** `{current_val}`"
+
+    # Send a message to get the input
+    try:
+        prompt_msg = await client.send_message(
+            chat_id=callback_query.message.chat.id,
+            text=f"**{prompt_text}**{current_val_text}\n\n(Reply to this message with your input, or type 'skip')",
+            reply_markup=ForceReply(selective=True)
+        )
+        session["prompt_message_id"] = prompt_msg.id
+        await callback_query.answer()
+    except Exception as e:
+        await callback_query.answer(f"Error: {e}", show_alert=True)
+
+
+import pyrogram
+
+@Client.on_message(filters.reply & filters.user(ADMINS), group=-1)
+async def process_manual_post_input(client, message):
+    user_id = message.from_user.id
+    if user_id not in POST_SESSIONS:
+        return
+
+    session = POST_SESSIONS[user_id]
+    waiting_for = session.get("waiting_for")
+
+    if not waiting_for:
+        return
+
+    # Check if the replied message is the prompt we actually sent
+    if not message.reply_to_message or session.get("prompt_message_id") != message.reply_to_message.id:
+        return
+
+    key = waiting_for
+
+    # Save user input to session data before deleting messages
+    if key == "poster":
+        if message.photo:
+            session["data"]["poster_photo"] = message.photo.file_id
+            session["data"]["poster"] = "photo" # just a marker
+            session["data"]["poster_url"] = None
+        else:
+            session["data"]["poster_photo"] = None
+            text = message.text.strip() if message.text else ""
+            session["data"]["poster_url"] = text if text.lower() != 'skip' else None
+            session["data"]["poster"] = "url" if text.lower() != 'skip' else None
+    else:
+        text = message.text.strip() if message.text else ""
+        if text.lower() == 'skip':
+            if key in ["imdb_link", "tmdb_link"]:
+                session["data"][key] = "#"
+            elif key == "movie_name":
+                session["data"][key] = None # invalid state, but we handle it
+            else:
+                session["data"][key] = "N/A"
+        else:
+            session["data"][key] = text
+            if key == "movie_name" and session["data"].get("auto_fetch"):
+                try:
+                    imdb_details = await get_movie_details(text)
+                    if imdb_details:
+                        if not session["data"].get("rating") or session["data"].get("rating") == "N/A":
+                            raw_rating = imdb_details.get("rating", "N/A")
+                            if raw_rating and raw_rating not in ["N/A", "None"]:
+                                session["data"]["rating"] = f"{raw_rating}/10"
+                            else:
+                                session["data"]["rating"] = "N/A"
+                        if not session["data"].get("genres") or session["data"].get("genres") == "N/A":
+                            session["data"]["genres"] = imdb_details.get("genres", "N/A")
+                        if not session["data"].get("duration") or session["data"].get("duration") == "N/A":
+                            raw_runtime = imdb_details.get("runtime", "N/A")
+                            if raw_runtime and raw_runtime not in ["N/A", "None"]:
+                                import re
+                                match = re.search(r'\d+', str(raw_runtime))
+                                if match:
+                                    minutes = int(match.group())
+                                    kind = imdb_details.get("kind", "").lower()
+                                    if "tv" in kind or "series" in kind:
+                                        session["data"]["duration"] = f"{minutes} min/ep (Avg)"
+                                    else:
+                                        hours = minutes // 60
+                                        mins = minutes % 60
+                                        session["data"]["duration"] = f"{hours}h {mins}m" if hours > 0 else f"{mins}m"
+                                else:
+                                    session["data"]["duration"] = str(raw_runtime)
+                            else:
+                                session["data"]["duration"] = "N/A"
+                        if not session["data"].get("imdb_link") or session["data"].get("imdb_link") == "#":
+                            session["data"]["imdb_link"] = imdb_details.get("url", "#")
+                        if not session["data"].get("poster_url") and not session["data"].get("poster_photo"):
+                            if imdb_details.get("poster"):
+                                session["data"]["poster_url"] = imdb_details.get("poster")
+                                session["data"]["poster"] = "url"
+                except Exception as e:
+                    pass
+
+    session["waiting_for"] = None
+    session["prompt_message_id"] = None
+
+    # Update the main message keyboard and preview text
+    try:
+        preview_text = "<b>Live Preview:</b>\n\n" + generate_post_text(session["data"]) + "\n\n<i>Click the buttons below to fill in the details. Once ready, click Publish.</i>"
+        await client.edit_message_text(
+            chat_id=session["chat_id"],
+            message_id=session["message_id"],
+            text=preview_text,
+            reply_markup=get_post_keyboard(session["data"]),
+            parse_mode=enums.ParseMode.HTML,
+            disable_web_page_preview=True
+        )
+    except Exception:
+        pass # Ignore MessageNotModified or other errors
+
+    # Delete user's input message and the bot's prompt message
+    try:
+        await message.delete()
+        if message.reply_to_message:
+            await message.reply_to_message.delete()
+    except Exception:
+        pass
+
+    raise pyrogram.StopPropagation
+
+
+async def publish_post(client, chat_id, data):
+    try:
+        movie_name = data.get("movie_name", "Unknown")
+        if movie_name == "N/A":
+            movie_name = "Unknown"
+
+        text = generate_post_text(data)
+
+        buttons = InlineKeyboardMarkup([
+            #[
+                #InlineKeyboardButton(
+                    #'ɢᴇᴛ ғɪʟᴇs',
+                    #url=f"https://t.me/{temp.U_NAME}?start=getfile-{movie_name.replace(' ', '-')}"
+                #)
+            #],
+            [
+                InlineKeyboardButton(
+                    '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
+                    url=MOVIE_GROUP
+                )
+            ]
+        ])
+
+        poster_photo = data.get("poster_photo")
+
+        if poster_photo:
+            await client.send_photo(
+                chat_id=MOVIE_UPDATE_CHANNEL,
+                photo=poster_photo,
+                caption=text,
+                reply_markup=buttons,
+                parse_mode=enums.ParseMode.HTML,
+                has_spoiler=True
+            )
+        else:
+            await client.send_message(
+                chat_id=MOVIE_UPDATE_CHANNEL,
+                text=text,
+                reply_markup=buttons,
+                parse_mode=enums.ParseMode.HTML,
+                disable_web_page_preview=False
+            )
+
+        await client.send_message(chat_id, "✅ Post successfully sent to the update channel!")
+
+    except Exception as e:
+        await client.send_message(chat_id, f"❌ An error occurred while posting: {e}")
