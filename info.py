@@ -55,8 +55,8 @@ MULTI_FSUB = [int(channel_id) for channel_id in environ.get('MULTI_FSUB', '-1002
 # ============================
 # Payment Configuration
 # ============================
-QR_CODE = environ.get('QR_CODE', 't.me/Deendayal_Surya')
-OWNER_UPI_ID = environ.get('OWNER_UPI_ID', 't.me/Deendayal_Surya')
+QR_CODE = environ.get('QR_CODE', 'Not available')
+OWNER_UPI_ID = environ.get('OWNER_UPI_ID', 'Not available')
 
 # ============================
 # MongoDB Configuration
@@ -92,7 +92,7 @@ IS_TUTORIAL = bool(environ.get('IS_TUTORIAL', False))
 GRP_LNK = environ.get('GRP_LNK', 'https://t.me/Deendayal_Hindi_Movies')
 CHNL_LNK = environ.get('CHNL_LNK', 'https://t.me/Deendayal_dhakadd')
 UPDATE_CHNL_LNK = environ.get('UPDATE_CHNL_LNK', 'https://t.me/+UgmTJmg9u90yMTNl')
-OWNER_LNK = environ.get('OWNER_LNK', 't.me/Deendayal_Surya')
+OWNER_LNK = environ.get('OWNER_LNK', 'https://t.me/DeendayalSupportBot')
 OWNERID = int(os.environ.get('OWNERID', '8070498307'))  # Replace with the actual admin ID
 
 # ============================
