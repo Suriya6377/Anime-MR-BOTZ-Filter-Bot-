@@ -28,7 +28,7 @@ BOT_TOKEN = environ.get('BOT_TOKEN', "")
 CACHE_TIME = int(environ.get('CACHE_TIME', 300))
 USE_CAPTION_FILTER = is_enabled((environ.get('USE_CAPTION_FILTER', 'True')), True)
 
-PICS = (environ.get('PICS', 'https://i.ibb.co/cSkX20Yp/photo-2026-03-07-21-48-55-7614634212993269776.jpg')).split()  # Sample pic
+PICS = (environ.get('PICS', 'https://i.ibb.co/6zhZ1Pm/photo-2026-03-07-21-44-39-7614632911618179088.jpg')).split()  # Sample pic
 NOR_IMG = environ.get("NOR_IMG", "https://graph.org/file/e20b5fdaf217252964202.jpg")
 MELCOW_VID = environ.get("MELCOW_VID", "https://graph.org/file/60e8a622b14796e4448ce.mp4")
 SPELL_IMG = environ.get("SPELL_IMG", "https://graph.org/file/13702ae26fb05df52667c.jpg")
@@ -39,13 +39,13 @@ FSUB_PICS = (environ.get('FSUB_PICS', 'https://graph.org/file/7478ff3eac37f4329c
 # Admin, Channels & Users Configuration
 # ============================
 ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ.get('ADMINS', '8070498307').split()] # Replace with the actual admin ID(s) to add
-CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '-1003225593340').split()]  # Channel id for auto indexing (make sure bot is admin)
+CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '-1002735590722').split()]  # Channel id for auto indexing (make sure bot is admin)
 LOG_CHANNEL = int(environ.get('LOG_CHANNEL', '-1003451702258'))  # Log channel id (make sure bot is admin)
 ADMIN_STATUS_CHANNEL = int(environ.get('ADMIN_STATUS_CHANNEL', '-1003787215899')) # Log channel for user status
 BIN_CHANNEL = int(environ.get('BIN_CHANNEL', '-1003459794069'))  # Bin channel id (make sure bot is admin)
 PREMIUM_LOGS = int(environ.get('PREMIUM_LOGS', '-1003300343068'))  # Premium logs channel id
 auth_channel = environ.get('AUTH_CHANNEL', '')  # Channel/Group ID for force sub (make sure bot is admin)
-DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '-1003679851003').split()]
+DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '-1003242965889').split()]
 support_chat_id = environ.get('SUPPORT_CHAT_ID', '-1003327259560')  # Support group id (make sure bot is admin)
 reqst_channel = environ.get('REQST_CHANNEL_ID', '-1003330982529')  # Request channel id (make sure bot is admin)
 AUTH_CHANNEL = [int(fch) if id_pattern.search(fch) else fch for fch in environ.get('AUTH_CHANNEL', '').split()]
@@ -313,10 +313,10 @@ BAD_WORDS = {
     "hdhub4u",
     "mkvcinemas",
     "CineVood",
-    "Vegamovies",
-    "Vegamovies.NL",
     "primefix",
     "join",
+    "Vegamovies",
+    "Vegamovies.NL",
     "www",
     "villa",
     "tg",
