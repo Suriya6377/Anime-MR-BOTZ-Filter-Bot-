@@ -78,7 +78,7 @@ NORMALIZE_PATTERN = re.compile(r"[._]+|[()\[\]{}:;'–!,.?_]")
 QUALITY_PATTERN = re.compile(
     r"\b(?:HDCam|HDTC|CamRip|TS|TC|TeleSync|DVDScr|DVDRip|PreDVD|"
     r"WEBRip|WEB-DL|TVRip|HDTV|BluRay|BRRip|BDRip|"
-    r"360p|480p|720p|1080p|2160p|4K|1440p|540p|240p|140p|HDRip)\b",
+    r"360p|480p|720p|1080p|4K-2160p|2160p|4K|1440p|540p|240p|140p|HDRip)\b",
     re.IGNORECASE
 )
 YEAR_PATTERN = re.compile(r"(?<![A-Za-z0-9])(?:19|20)\d{2}(?![A-Za-z0-9])")
@@ -107,6 +107,119 @@ def remove_ignored_words(text: str) -> str:
 def get_qualities(text: str) -> str:
     qualities = QUALITY_PATTERN.findall(text)
     return ", ".join(qualities) if qualities else "N/A"
+
+QUALITY_ORDER = [
+    "240p", "360p", "480p", "540p", "720p", "1080p", "1440p", "4K-2160p"
+]
+QUALITY_EMOJIS = {
+    "240p": "🔴",
+    "360p": "🟠",
+    "480p": "🟢",
+    "540p": "🟡",
+    "720p": "🔵",
+    "1080p": "🟣",
+    "1440p": "🟤",
+    "4K-2160p": "⚪",
+}
+
+def get_quality_buttons(movie_doc, group_id):
+    extracted_qualities = set()
+    for file in movie_doc.get("files", []):
+        if file.get("quality", "N/A") != "N/A":
+            for q in file["quality"].split(","):
+                q = q.strip()
+                if q:
+                    extracted_qualities.add(q)
+
+    matched_qualities = []
+    for q in extracted_qualities:
+        q_upper = q.upper()
+        for valid_q in QUALITY_ORDER:
+            if valid_q.upper() == q_upper:
+                matched_qualities.append(valid_q)
+                break
+
+    if not matched_qualities:
+        return []
+
+    matched_qualities.sort(key=lambda x: QUALITY_ORDER.index(x))
+
+    buttons = []
+    buttons.append([InlineKeyboardButton("🎬 Available Quality", callback_data="ignore")])
+
+    bot_username = temp.U_NAME
+    base_name = group_id.replace(" ", "-")
+
+    row = []
+    for q in matched_qualities:
+        emoji = QUALITY_EMOJIS.get(q, "🔵")
+        text = f"{emoji} {q}"
+        url = f"https://t.me/{bot_username}?start=getfile-{base_name}-{q}"
+        row.append(InlineKeyboardButton(text, url=url))
+        if len(row) == 3:
+            buttons.append(row)
+            row = []
+    if row:
+        buttons.append(row)
+
+    return buttons
+
+def get_episode_buttons(movie_doc, group_id):
+    extracted_episodes = set()
+    for file in movie_doc.get("files", []):
+        filename = file.get("filename", "")
+        # First try to parse from the filename to support all common formats correctly
+        _, ep_val = extract_season_episode(filename)
+        # Fallback to the saved episode field just in case
+        if not ep_val:
+            ep_val = file.get("episode")
+
+        if ep_val:
+            ep_val = str(ep_val).strip()
+            if "-" in ep_val:
+                parts = ep_val.split("-")
+                if len(parts) == 2:
+                    try:
+                        start = int(parts[0].strip())
+                        end = int(parts[1].strip())
+                        if start <= end and (end - start) <= 100:
+                            for i in range(start, end + 1):
+                                extracted_episodes.add(i)
+                    except ValueError:
+                        pass
+            else:
+                try:
+                    num = int(ep_val.strip())
+                    extracted_episodes.add(num)
+                except ValueError:
+                    pass
+
+    if not extracted_episodes:
+        return []
+
+    sorted_episodes = sorted(list(extracted_episodes))
+
+    if len(sorted_episodes) > 80:
+        sorted_episodes = sorted_episodes[:80]
+
+    buttons = []
+    buttons.append([InlineKeyboardButton("🎞 Available Episodes", callback_data="ignore")])
+
+    bot_username = temp.U_NAME
+    base_name = group_id.replace(" ", "-")
+
+    row = []
+    for ep in sorted_episodes:
+        ep_str = f"E{ep:02d}"
+        url = f"https://t.me/{bot_username}?start=getfile-{base_name}-{ep_str}"
+        row.append(InlineKeyboardButton(ep_str, url=url))
+        if len(row) == 4:
+            buttons.append(row)
+            row = []
+    if row:
+        buttons.append(row)
+
+    return buttons
 
 def extract_ott_platform(text: str) -> str:
     text = text.lower()
@@ -387,20 +500,20 @@ async def send_movie_update(bot, group_id):
                 return None
 
             text = generate_movie_message(movie_doc, group_id)
-            buttons = InlineKeyboardMarkup([
-                #[
-                    #InlineKeyboardButton(
-                        #'ɢᴇᴛ ғɪʟᴇs',
-                        #url=f"https://t.me/{temp.U_NAME}?start=getfile-{group_id.replace(' ', '-')}"
-                    #)
-                #],
-                [
-                    InlineKeyboardButton(
-                        '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                        url=MOVIE_GROUP
-                    )
-                ]
+
+            is_series = any(f.get("season") for f in movie_doc.get("files", []))
+            if is_series:
+                button_list = get_episode_buttons(movie_doc, group_id)
+            else:
+                button_list = get_quality_buttons(movie_doc, group_id)
+
+            button_list.append([
+                InlineKeyboardButton(
+                    '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
+                    url=MOVIE_GROUP
+                )
             ])
+            buttons = InlineKeyboardMarkup(button_list)
 
             if movie_doc.get("poster_url") and not LINK_PREVIEW:
                 resized_poster = await fetch_image(movie_doc["poster_url"], size=(2560, 1440) if LANDSCAPE_POSTER else (853, 1280))
@@ -445,20 +558,20 @@ async def update_movie_message(bot, group_id):
             return
 
         text = generate_movie_message(movie_doc, group_id)
-        buttons = InlineKeyboardMarkup([
-            #[
-                #InlineKeyboardButton(
-                    #'ɢᴇᴛ ғɪʟᴇs',
-                    #url=f"https://t.me/{temp.U_NAME}?start=getfile-{group_id.replace(' ', '-')}"
-                #)
-            #],
-            [
-                InlineKeyboardButton(
-                    '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
-                    url=MOVIE_GROUP
-                )
-            ]
+
+        is_series = any(f.get("season") for f in movie_doc.get("files", []))
+        if is_series:
+            button_list = get_episode_buttons(movie_doc, group_id)
+        else:
+            button_list = get_quality_buttons(movie_doc, group_id)
+
+        button_list.append([
+            InlineKeyboardButton(
+                '♻️ 𝗠𝗼𝘃𝗶𝗲 𝗦𝗲𝗮𝗿𝗰𝗵 𝗚𝗿𝗼𝘂𝗽 ♻️',
+                url=MOVIE_GROUP
+            )
         ])
+        buttons = InlineKeyboardMarkup(button_list)
 
         message_id = movie_doc.get("message_id")
         is_photo = movie_doc.get("is_photo", False)
