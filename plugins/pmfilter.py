@@ -2773,9 +2773,9 @@ async def advantage_spell_chok(client, message):
             ],[
                 InlineKeyboardButton("Movie Request Admin", url=OWNER_LNK)
             ]]
-            #k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
-            #await asyncio.sleep(60)
-            #await k.delete()
+            k = await message.reply_text(text=script.I_CUDNT.format(search), reply_markup=InlineKeyboardMarkup(button))
+            await asyncio.sleep(60)
+            await k.delete()
             try:
                 await message.delete()
             except Exception as e:
@@ -2791,15 +2791,15 @@ async def advantage_spell_chok(client, message):
             buttons.append(
                 [InlineKeyboardButton(text="🚫 ᴄʟᴏsᴇ 🚫", callback_data='close_data')]
             )
-            #d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
+            d = await message.reply_text(text=script.CUDNT_FND.format(message.from_user.mention), reply_markup=InlineKeyboardMarkup(buttons), reply_to_message_id=message.id)
         except Exception as e:
             logger.error(f"[ERROR] advantage_spell_chok: buttons/reply failed | query='{search}' | user={user} | error: {e}")
             try:
                 await message.delete()
             except Exception as e:
                 return
-        #await asyncio.sleep(60)
-        #await d.delete()
+        await asyncio.sleep(60)
+        await d.delete()
         try:
             await message.delete()
         except Exception as e:
