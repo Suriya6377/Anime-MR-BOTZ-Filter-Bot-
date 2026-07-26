@@ -310,9 +310,8 @@
              color: #fff; /* Keep text white on hover */
         }
 
-        /* Only show Lock and Brightness in Fullscreen */
-        #video-wrapper:not(.is-fullscreen) .lock-btn,
-        #video-wrapper:not(.is-fullscreen) .brightness-container {
+        /* Only show Lock in Fullscreen */
+        #video-wrapper:not(.is-fullscreen) .lock-btn {
             display: none !important;
         }
 
@@ -336,75 +335,6 @@
         #video-wrapper.video-locked .plyr__controls {
             opacity: 0 !important;
             pointer-events: none !important;
-        }
-
-        /* Brightness Slider Specifics */
-        .brightness-container {
-            z-index: 25;
-            transition: opacity 0.3s;
-            position: absolute;
-            left: 50px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .brightness-slider-wrapper {
-            position: relative;
-            width: 8px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.4);
-            border-radius: 4px;
-        }
-
-        #brightness-slider {
-            -webkit-appearance: none;
-            width: 120px;
-            height: 8px;
-            background: transparent;
-            position: absolute;
-            top: 56px;
-            left: -56px;
-            transform: rotate(-90deg);
-            cursor: pointer;
-            margin: 0;
-            --val: 90%;
-        }
-
-        #brightness-slider::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 8px;
-            background: linear-gradient(to right, #007aff 0%, #007aff var(--val), transparent var(--val), transparent 100%);
-            border-radius: 4px;
-        }
-
-        #brightness-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: #007aff;
-            margin-top: -4px;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
-
-        #brightness-slider::-moz-range-track {
-            width: 100%;
-            height: 8px;
-            background: linear-gradient(to right, #007aff 0%, #007aff var(--val), transparent var(--val), transparent 100%);
-            border-radius: 4px;
-        }
-
-        #brightness-slider::-moz-range-thumb {
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: #007aff;
-            border: none;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
 
         /* Filename Box */
@@ -700,14 +630,6 @@
 
                     <!-- Custom Netflix Style Overlay -->
                     <div class="custom-overlay active" id="custom-controls">
-                        <!-- Brightness Slider -->
-                        <div class="brightness-container overlay-btn">
-                            <i class="fas fa-sun" style="font-size: 1.2rem;"></i>
-                            <div class="brightness-slider-wrapper">
-                                <input type="range" id="brightness-slider" min="0" max="100" step="1" value="90">
-                            </div>
-                        </div>
-
                         <!-- Resize / Aspect Ratio Button -->
                         <button class="overlay-btn resize-btn" id="resize-btn" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem;">
                             <i class="fas fa-expand"></i>
@@ -849,7 +771,6 @@
             const speedSpan = speedBtn.querySelector('span');
             const lockBtn = document.getElementById('lock-btn');
             const lockIcon = lockBtn.querySelector('i');
-            const brightnessSlider = document.getElementById('brightness-slider');
             const videoElem = document.getElementById('player');
 
             let overlayTimeout;
@@ -946,23 +867,6 @@
                     lockIcon.classList.add('fa-unlock-keyhole');
                 }
                 showOverlay(); // Reset timer to hide unlock button
-            });
-
-            // Brightness Feature Logic
-            brightnessSlider.addEventListener('input', (e) => {
-                e.stopPropagation();
-                if (isLocked) return;
-                const brightnessValue = e.target.value;
-
-                // Update slider fill percentage
-                brightnessSlider.style.setProperty('--val', `${brightnessValue}%`);
-
-                if (videoElem) {
-                    // Map 0-100 to 0.1 - 1.1 brightness range
-                    const cssBrightness = 0.1 + (brightnessValue / 100);
-                    videoElem.style.filter = `brightness(${cssBrightness})`;
-                }
-                showOverlay();
             });
 
             // Handle Fullscreen Events for Auto-Rotate and Icon changes
