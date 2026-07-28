@@ -39,7 +39,7 @@ FSUB_PICS = (environ.get('FSUB_PICS', 'https://graph.org/file/7478ff3eac37f4329c
 # Admin, Channels & Users Configuration
 # ============================
 ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ.get('ADMINS', '8070498307').split()] # Replace with the actual admin ID(s) to add
-CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '-1002735590722').split()]  # Channel id for auto indexing (make sure bot is admin)
+CHANNELS = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('CHANNELS', '-1003879909715').split()]  # Channel id for auto indexing (make sure bot is admin)
 LOG_CHANNEL = int(environ.get('LOG_CHANNEL', '-1003451702258'))  # Log channel id (make sure bot is admin)
 ADMIN_STATUS_CHANNEL = int(environ.get('ADMIN_STATUS_CHANNEL', '-1003787215899')) # Log channel for user status
 BIN_CHANNEL = int(environ.get('BIN_CHANNEL', '-1003459794069'))  # Bin channel id (make sure bot is admin)
