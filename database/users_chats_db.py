@@ -166,11 +166,6 @@ class Database:
             'auto_ffilter': AUTO_FFILTER,
             'max_btn': MAX_BTN,
             'template': IMDB_TEMPLATE,
-            'shortlink': SHORTLINK_URL,
-            'shortlink_api': SHORTLINK_API,
-            'is_shortlink': IS_SHORTLINK,
-            'tutorial': TUTORIAL,
-            'is_tutorial': IS_TUTORIAL,
             'is_verify': VERIFY,
             'fsub': MULTI_FSUB,
         }
