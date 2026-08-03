@@ -11,8 +11,6 @@ from database.refer import referdb
 from pyrogram.errors.exceptions.bad_request_400 import MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty
 from Script import script
 import pyrogram
-from database.connections_mdb import active_connection, all_connections, delete_connection, if_active, make_active, \
-    make_inactive
 from info import *
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto, WebAppInfo
 from pyrogram import Client, filters, enums
@@ -106,7 +104,7 @@ async def give_filter(client, message):
                         return await message.delete()
                     await auto_filter(client, message)
             except KeyError:
-                grpid = await active_connection(str(message.from_user.id))
+                grpid = message.chat.id
                 await save_group_settings(grpid, 'auto_ffilter', True)
                 settings = await get_settings(message.chat.id)
                 if settings['auto_ffilter']:
@@ -1068,7 +1066,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         chat_type = query.message.chat.type
 
         if chat_type == enums.ChatType.PRIVATE:
-            grpid = await active_connection(str(userid))
+            grpid = query.message.chat.id
             if grpid is not None:
                 grp_id = grpid
                 try:
@@ -1115,108 +1113,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     pass
             else:
                 await query.answer("Tʜᴀᴛ's ɴᴏᴛ ғᴏʀ ʏᴏᴜ!!", show_alert=True)
-    elif "groupcb" in query.data:
-        await query.answer()
-
-        group_id = query.data.split(":")[1]
-
-        act = query.data.split(":")[2]
-        hr = await client.get_chat(int(group_id))
-        title = hr.title
-        user_id = query.from_user.id
-
-        if act == "":
-            stat = "ᴄᴏɴɴᴇᴄᴛ"
-            cb = "connectcb"
-        else:
-            stat = "ᴅɪꜱᴄᴏɴɴᴇᴄᴛ"
-            cb = "disconnect"
-
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(f"{stat}", callback_data=f"{cb}:{group_id}"),
-             InlineKeyboardButton("ᴅᴇʟᴇᴛᴇ", callback_data=f"deletecb:{group_id}")],
-            [InlineKeyboardButton("ʙᴀᴄᴋ", callback_data="backcb")]
-        ])
-
-        await query.message.edit_text(
-            f"Gʀᴏᴜᴘ Nᴀᴍᴇ : **{title}**\nGʀᴏᴜᴘ ID : `{group_id}`",
-            reply_markup=keyboard,
-            parse_mode=enums.ParseMode.MARKDOWN
-        )
-        return await query.answer(MSG_ALRT)
-    elif "connectcb" in query.data:
-        await query.answer()
-
-        group_id = query.data.split(":")[1]
-
-        hr = await client.get_chat(int(group_id))
-
-        title = hr.title
-
-        user_id = query.from_user.id
-
-        mkact = await make_active(str(user_id), str(group_id))
-
-        if mkact:
-            await query.message.edit_text(
-                f"Cᴏɴɴᴇᴄᴛᴇᴅ ᴛᴏ **{title}**",
-                parse_mode=enums.ParseMode.MARKDOWN
-            )
-        else:
-            await query.message.edit_text('Sᴏᴍᴇ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ!!', parse_mode=enums.ParseMode.MARKDOWN)
-        return await query.answer(MSG_ALRT)
-    elif "disconnect" in query.data:
-        await query.answer()
-
-        group_id = query.data.split(":")[1]
-
-        hr = await client.get_chat(int(group_id))
-
-        title = hr.title
-        user_id = query.from_user.id
-
-        mkinact = await make_inactive(str(user_id))
-
-        if mkinact:
-            await query.message.edit_text(
-                f"Dɪsᴄᴏɴɴᴇᴄᴛᴇᴅ ғʀᴏᴍ **{title}**",
-                parse_mode=enums.ParseMode.MARKDOWN
-            )
-        else:
-            await query.message.edit_text(
-                f"Sᴏᴍᴇ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ!!",
-                parse_mode=enums.ParseMode.MARKDOWN
-            )
-        return await query.answer(MSG_ALRT)
-    elif "deletecb" in query.data:
-        await query.answer()
-
-        user_id = query.from_user.id
-        group_id = query.data.split(":")[1]
-
-        delcon = await delete_connection(str(user_id), str(group_id))
-
-        if delcon:
-            await query.message.edit_text(
-                "Sᴜᴄᴄᴇssғᴜʟʟʏ ᴅᴇʟᴇᴛᴇᴅ ᴄᴏɴɴᴇᴄᴛɪᴏɴ !"
-            )
-        else:
-            await query.message.edit_text(
-                f"Sᴏᴍᴇ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀʀᴇᴅ!!",
-                parse_mode=enums.ParseMode.MARKDOWN
-            )
-        return await query.answer(MSG_ALRT)
-    elif query.data == "backcb":
-        await query.answer()
-
-        userid = query.from_user.id
-
-        groupids = await all_connections(str(userid))
-        if groupids is None:
-            await query.message.edit_text(
-                "Tʜᴇʀᴇ ᴀʀᴇ ɴᴏ ᴀᴄᴛɪᴠᴇ ᴄᴏɴɴᴇᴄᴛɪᴏɴs!! Cᴏɴɴᴇᴄᴛ ᴛᴏ sᴏᴍᴇ ɢʀᴏᴜᴘs ғɪʀsᴛ.",
-            )
-            return await query.answer(MSG_ALRT)
         buttons = []
         for groupid in groupids:
             try:
@@ -1498,12 +1394,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     InlineKeyboardButton('10' if settings["max_btn"] else f'{MAX_B_TN}',
                                          callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}')
                 ],
-                [
-                    InlineKeyboardButton('ꜱʜᴏʀᴛʟɪɴᴋ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('ᴇɴᴀʙʟᴇ' if settings["is_shortlink"] else 'ᴅɪꜱᴀʙʟᴇ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}')
-                ],
+
                 [
                     InlineKeyboardButton('⇋ ᴄʟᴏꜱᴇ ꜱᴇᴛᴛɪɴɢꜱ ᴍᴇɴᴜ ⇋', 
                                          callback_data='close_data'
@@ -1590,12 +1481,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     InlineKeyboardButton('10' if settings["max_btn"] else f'{MAX_B_TN}',
                                          callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}')
                 ],
-                [
-                    InlineKeyboardButton('ꜱʜᴏʀᴛʟɪɴᴋ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('ᴇɴᴀʙʟᴇ' if settings["is_shortlink"] else 'ᴅɪꜱᴀʙʟᴇ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}')
-                ],
+
                 [
                     InlineKeyboardButton('⇋ ᴄʟᴏꜱᴇ ꜱᴇᴛᴛɪɴɢꜱ ᴍᴇɴᴜ ⇋', 
                                          callback_data='close_data'
@@ -1874,7 +1760,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     InlineKeyboardButton('🔮 Fᴇᴀᴛᴜʀᴇ', callback_data="features"),
                     InlineKeyboardButton('❤️ ᴀʙᴏᴜᴛ', callback_data='about')
                 ],[
-                    InlineKeyboardButton('Eᴀʀɴ ᴍᴏɴᴇʏ..🍁', callback_data="shortlink_info"),
                     InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ ⚜️', callback_data='channels')
                 ],[
                     InlineKeyboardButton('🦧 Hᴇʟᴘ', callback_data='help'),
@@ -2231,17 +2116,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
             parse_mode=enums.ParseMode.HTML
         )
 
-    elif query.data == "group":
-        buttons = [[
-            InlineKeyboardButton('⇋ ʙᴀᴄᴋ ⇋', callback_data='help')
-        ]]
-        reply_markup = InlineKeyboardMarkup(buttons)
-        await query.message.edit_text(
-            text=script.GROUP_TXT.format(query.from_user.mention),
-            reply_markup=reply_markup,
-            parse_mode=enums.ParseMode.HTML
-        )
-
 
     elif query.data == "admic":
         if query.from_user.id not in ADMINS:
@@ -2301,8 +2175,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         buttons = [[
             InlineKeyboardButton('🛠️ Aᴅᴍɪɴ', callback_data='admic')
         ],[
-            InlineKeyboardButton('👨🏻‍💼 ᴜꜱᴇʀ', callback_data='users'),
-            InlineKeyboardButton('🤝 ɢʀᴏᴜᴘ', callback_data='group')
+            InlineKeyboardButton('👨🏻‍💼 ᴜꜱᴇʀ', callback_data='users')
         ],[
             InlineKeyboardButton('⇋ ʙᴀᴄᴋ ⇋', callback_data='start')
         ]]
@@ -2397,14 +2270,20 @@ async def cb_handler(client: Client, query: CallbackQuery):
             )
     elif query.data.startswith("setgs"):
         ident, set_type, status, grp_id = query.data.split("#")
-        grpid = await active_connection(str(query.from_user.id))
+        grpid = query.message.chat.id
 
-        if str(grp_id) != str(grpid):
-            await query.message.edit("Yᴏᴜʀ Aᴄᴛɪᴠᴇ Cᴏɴɴᴇᴄᴛɪᴏɴ Hᴀs Bᴇᴇɴ Cʜᴀɴɢᴇᴅ. Gᴏ Tᴏ /connections ᴀɴᴅ ᴄʜᴀɴɢᴇ ʏᴏᴜʀ ᴀᴄᴛɪᴠᴇ ᴄᴏɴɴᴇᴄᴛɪᴏɴ.")
+
+        userid = query.from_user.id if query.from_user else None
+        if not userid:
             return await query.answer(MSG_ALRT)
+        st = await client.get_chat_member(grpid, userid)
+        if not ((st.status == enums.ChatMemberStatus.OWNER) or (str(userid) in ADMINS)):
+            return await query.answer("You don't have permission to do this.", show_alert=True)
 
-        if set_type == 'is_shortlink' and query.from_user.id not in ADMINS:
-            return await query.answer(text=f"Hey {query.from_user.first_name}, You can't change shortlink settings for your group !\n\nIt's an admin only setting !", show_alert=True)
+
+
+
+
 
         if status == "True":
             await save_group_settings(grpid, set_type, False)
@@ -2466,12 +2345,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     InlineKeyboardButton('10' if settings["max_btn"] else f'{MAX_B_TN}',
                                          callback_data=f'setgs#max_btn#{settings["max_btn"]}#{str(grp_id)}')
                 ],
-                [
-                    InlineKeyboardButton('ꜱʜᴏʀᴛʟɪɴᴋ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}'),
-                    InlineKeyboardButton('ᴇɴᴀʙʟᴇ' if settings["is_shortlink"] else 'ᴅɪꜱᴀʙʟᴇ',
-                                         callback_data=f'setgs#is_shortlink#{settings["is_shortlink"]}#{str(grp_id)}')
-                ],
+
                 [
                     InlineKeyboardButton('⇋ ᴄʟᴏꜱᴇ ꜱᴇᴛᴛɪɴɢꜱ ᴍᴇɴᴜ ⇋', 
                                          callback_data='close_data'
@@ -2842,7 +2716,7 @@ async def manual_filters(client, message, text=False):
                                         if settings['auto_delete']:
                                             await joelkb.delete()
                                     except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
+                                        grpid = message.chat.id
                                         await save_group_settings(grpid, 'auto_delete', True)
                                         settings = await get_settings(message.chat.id)
                                         if settings['auto_delete']:
@@ -2853,14 +2727,14 @@ async def manual_filters(client, message, text=False):
                                             await asyncio.sleep(DELETE_TIME)
                                             await joelkb.delete()
                                     except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
+                                        grpid = message.chat.id
                                         await save_group_settings(grpid, 'auto_delete', True)
                                         settings = await get_settings(message.chat.id)
                                         if settings['auto_delete']:
                                             await asyncio.sleep(DELETE_TIME)
                                             await joelkb.delete()
                             except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
+                                grpid = message.chat.id
                                 await save_group_settings(grpid, 'auto_ffilter', True)
                                 settings = await get_settings(message.chat.id)
                                 if settings['auto_ffilter']:
@@ -2883,7 +2757,7 @@ async def manual_filters(client, message, text=False):
                                         if settings['auto_delete']:
                                             await joelkb.delete()
                                     except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
+                                        grpid = message.chat.id
                                         await save_group_settings(grpid, 'auto_delete', True)
                                         settings = await get_settings(message.chat.id)
                                         if settings['auto_delete']:
@@ -2894,14 +2768,14 @@ async def manual_filters(client, message, text=False):
                                             await asyncio.sleep(DELETE_TIME)
                                             await joelkb.delete()
                                     except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
+                                        grpid = message.chat.id
                                         await save_group_settings(grpid, 'auto_delete', True)
                                         settings = await get_settings(message.chat.id)
                                         if settings['auto_delete']:
                                             await asyncio.sleep(DELETE_TIME)
                                             await joelkb.delete()
                             except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
+                                grpid = message.chat.id
                                 await save_group_settings(grpid, 'auto_ffilter', True)
                                 settings = await get_settings(message.chat.id)
                                 if settings['auto_ffilter']:
@@ -2922,7 +2796,7 @@ async def manual_filters(client, message, text=False):
                                     if settings['auto_delete']:
                                         await joelkb.delete()
                                 except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
+                                    grpid = message.chat.id
                                     await save_group_settings(grpid, 'auto_delete', True)
                                     settings = await get_settings(message.chat.id)
                                     if settings['auto_delete']:
@@ -2933,14 +2807,14 @@ async def manual_filters(client, message, text=False):
                                         await asyncio.sleep(DELETE_TIME)
                                         await joelkb.delete()
                                 except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
+                                    grpid = message.chat.id
                                     await save_group_settings(grpid, 'auto_delete', True)
                                     settings = await get_settings(message.chat.id)
                                     if settings['auto_delete']:
                                         await asyncio.sleep(DELETE_TIME)
                                         await joelkb.delete()
                         except KeyError:
-                            grpid = await active_connection(str(message.from_user.id))
+                            grpid = message.chat.id
                             await save_group_settings(grpid, 'auto_ffilter', True)
                             settings = await get_settings(message.chat.id)
                             if settings['auto_ffilter']:
@@ -2961,7 +2835,7 @@ async def manual_filters(client, message, text=False):
                                     if settings['auto_delete']:
                                         await joelkb.delete()
                                 except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
+                                    grpid = message.chat.id
                                     await save_group_settings(grpid, 'auto_delete', True)
                                     settings = await get_settings(message.chat.id)
                                     if settings['auto_delete']:
@@ -2972,14 +2846,14 @@ async def manual_filters(client, message, text=False):
                                         await asyncio.sleep(DELETE_TIME)
                                         await joelkb.delete()
                                 except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
+                                    grpid = message.chat.id
                                     await save_group_settings(grpid, 'auto_delete', True)
                                     settings = await get_settings(message.chat.id)
                                     if settings['auto_delete']:
                                         await asyncio.sleep(DELETE_TIME)
                                         await joelkb.delete()
                         except KeyError:
-                            grpid = await active_connection(str(message.from_user.id))
+                            grpid = message.chat.id
                             await save_group_settings(grpid, 'auto_ffilter', True)
                             settings = await get_settings(message.chat.id)
                             if settings['auto_ffilter']:
@@ -3025,7 +2899,7 @@ async def global_filters(client, message, text=False):
                                             if settings['auto_delete']:
                                                 await joelkb.delete()
                                         except KeyError:
-                                            grpid = await active_connection(str(message.from_user.id))
+                                            grpid = message.chat.id
                                             await save_group_settings(grpid, 'auto_delete', True)
                                             settings = await get_settings(message.chat.id)
                                             if settings['auto_delete']:
@@ -3036,14 +2910,14 @@ async def global_filters(client, message, text=False):
                                                 await asyncio.sleep(DELETE_TIME)
                                                 await joelkb.delete()
                                         except KeyError:
-                                            grpid = await active_connection(str(message.from_user.id))
+                                            grpid = message.chat.id
                                             await save_group_settings(grpid, 'auto_delete', True)
                                             settings = await get_settings(message.chat.id)
                                             if settings['auto_delete']:
                                                 await asyncio.sleep(DELETE_TIME)
                                                 await joelkb.delete()
                                 except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
+                                    grpid = message.chat.id
                                     await save_group_settings(grpid, 'auto_ffilter', True)
                                     settings = await get_settings(message.chat.id)
                                     if settings['auto_ffilter']:
@@ -3053,7 +2927,7 @@ async def global_filters(client, message, text=False):
                                     if settings['auto_delete']:
                                         await joelkb.delete()
                                 except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
+                                    grpid = message.chat.id
                                     await save_group_settings(grpid, 'auto_delete', True)
                                     settings = await get_settings(message.chat.id)
                                     if settings['auto_delete']:
@@ -3078,7 +2952,7 @@ async def global_filters(client, message, text=False):
                                             if settings['auto_delete']:
                                                 await joelkb.delete()
                                         except KeyError:
-                                            grpid = await active_connection(str(message.from_user.id))
+                                            grpid = message.chat.id
                                             await save_group_settings(grpid, 'auto_delete', True)
                                             settings = await get_settings(message.chat.id)
                                             if settings['auto_delete']:
@@ -3089,14 +2963,14 @@ async def global_filters(client, message, text=False):
                                                 await asyncio.sleep(DELETE_TIME)
                                                 await joelkb.delete()
                                         except KeyError:
-                                            grpid = await active_connection(str(message.from_user.id))
+                                            grpid = message.chat.id
                                             await save_group_settings(grpid, 'auto_delete', True)
                                             settings = await get_settings(message.chat.id)
                                             if settings['auto_delete']:
                                                 await asyncio.sleep(DELETE_TIME)
                                                 await joelkb.delete()
                                 except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
+                                    grpid = message.chat.id
                                     await save_group_settings(grpid, 'auto_ffilter', True)
                                     settings = await get_settings(message.chat.id)
                                     if settings['auto_ffilter']:
@@ -3106,7 +2980,7 @@ async def global_filters(client, message, text=False):
                                     if settings['auto_delete']:
                                         await joelkb.delete()
                                 except KeyError:
-                                    grpid = await active_connection(str(message.from_user.id))
+                                    grpid = message.chat.id
                                     await save_group_settings(grpid, 'auto_delete', True)
                                     settings = await get_settings(message.chat.id)
                                     if settings['auto_delete']:
@@ -3129,7 +3003,7 @@ async def global_filters(client, message, text=False):
                                         if settings['auto_delete']:
                                             await joelkb.delete()
                                     except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
+                                        grpid = message.chat.id
                                         await save_group_settings(grpid, 'auto_delete', True)
                                         settings = await get_settings(message.chat.id)
                                         if settings['auto_delete']:
@@ -3140,14 +3014,14 @@ async def global_filters(client, message, text=False):
                                             await asyncio.sleep(DELETE_TIME)
                                             await joelkb.delete()
                                     except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
+                                        grpid = message.chat.id
                                         await save_group_settings(grpid, 'auto_delete', True)
                                         settings = await get_settings(message.chat.id)
                                         if settings['auto_delete']:
                                             await asyncio.sleep(DELETE_TIME)
                                             await joelkb.delete()
                             except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
+                                grpid = message.chat.id
                                 await save_group_settings(grpid, 'auto_ffilter', True)
                                 settings = await get_settings(message.chat.id)
                                 if settings['auto_ffilter']:
@@ -3157,7 +3031,7 @@ async def global_filters(client, message, text=False):
                                 if settings['auto_delete']:
                                     await joelkb.delete()
                             except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
+                                grpid = message.chat.id
                                 await save_group_settings(grpid, 'auto_delete', True)
                                 settings = await get_settings(message.chat.id)
                                 if settings['auto_delete']:
@@ -3181,7 +3055,7 @@ async def global_filters(client, message, text=False):
                                         if settings['auto_delete']:
                                             await joelkb.delete()
                                     except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
+                                        grpid = message.chat.id
                                         await save_group_settings(grpid, 'auto_delete', True)
                                         settings = await get_settings(message.chat.id)
                                         if settings['auto_delete']:
@@ -3192,14 +3066,14 @@ async def global_filters(client, message, text=False):
                                             await asyncio.sleep(DELETE_TIME)
                                             await joelkb.delete()
                                     except KeyError:
-                                        grpid = await active_connection(str(message.from_user.id))
+                                        grpid = message.chat.id
                                         await save_group_settings(grpid, 'auto_delete', True)
                                         settings = await get_settings(message.chat.id)
                                         if settings['auto_delete']:
                                             await asyncio.sleep(DELETE_TIME)
                                             await joelkb.delete()
                             except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
+                                grpid = message.chat.id
                                 await save_group_settings(grpid, 'auto_ffilter', True)
                                 settings = await get_settings(message.chat.id)
                                 if settings['auto_ffilter']:
@@ -3209,7 +3083,7 @@ async def global_filters(client, message, text=False):
                                 if settings['auto_delete']:
                                     await joelkb.delete()
                             except KeyError:
-                                grpid = await active_connection(str(message.from_user.id))
+                                grpid = message.chat.id
                                 await save_group_settings(grpid, 'auto_delete', True)
                                 settings = await get_settings(message.chat.id)
                                 if settings['auto_delete']:
