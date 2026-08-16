@@ -8,9 +8,10 @@ from Deendayal_botz.Bot import work_loads
 from pyrogram import Client, utils, raw
 from .file_properties import get_file_ids
 from pyrogram.session import Session, Auth
-from pyrogram.errors import AuthBytesInvalid
+from pyrogram.errors import AuthBytesInvalid, FloodWait
 from Deendayal_botz.server.exceptions import FIleNotFound
 from pyrogram.file_id import FileId, FileType, ThumbnailSource
+from Deendayal_botz.Bot import multi_clients
 
 
 class ByteStreamer:
@@ -169,7 +170,7 @@ class ByteStreamer:
         first_part_cut: int,
         last_part_cut: int,
         part_count: int,
-        chunk_size: int,
+        chunk_size: int
     ) -> Union[str, None]:
         """
         Custom generator that yields the bytes of the media file.
@@ -185,11 +186,35 @@ class ByteStreamer:
         location = await self.get_location(file_id)
 
         try:
-            r = await media_session.send(
-                raw.functions.upload.GetFile(
-                    location=location, offset=offset, limit=chunk_size
-                ),
-            )
+            while True:
+                try:
+                    r = await media_session.send(
+                        raw.functions.upload.GetFile(
+                            location=location, offset=offset, limit=chunk_size
+                        ),
+                    )
+                    break
+                except FloodWait as e:
+                    logging.warning(f"Client {index} got FloodWait. Falling back to another client.")
+                    work_loads[index] -= 1
+                    work_loads[index] += e.value
+
+                    async def decrease_workload(idx, val):
+                        await asyncio.sleep(val)
+                        work_loads[idx] -= val
+                    asyncio.create_task(decrease_workload(index, e.value))
+
+                    old_index = index
+                    index = min(work_loads, key=work_loads.get)
+
+                    if index == old_index or work_loads[index] >= e.value:
+                        logging.warning("All clients are rate-limited. Sleeping.")
+                        await asyncio.sleep(e.value)
+
+                    client = multi_clients[index]
+                    work_loads[index] += 1
+                    media_session = await self.generate_media_session(client, file_id)
+
             if isinstance(r, raw.types.upload.File):
                 while True:
                     chunk = r.bytes
@@ -210,11 +235,35 @@ class ByteStreamer:
                     if current_part > part_count:
                         break
 
-                    r = await media_session.send(
-                        raw.functions.upload.GetFile(
-                            location=location, offset=offset, limit=chunk_size
-                        ),
-                    )
+                    while True:
+                        try:
+                            r = await media_session.send(
+                                raw.functions.upload.GetFile(
+                                    location=location, offset=offset, limit=chunk_size
+                                ),
+                            )
+                            break
+                        except FloodWait as e:
+                            logging.warning(f"Client {index} got FloodWait. Falling back to another client.")
+                            work_loads[index] -= 1
+                            work_loads[index] += e.value
+
+                            async def decrease_workload(idx, val):
+                                await asyncio.sleep(val)
+                                work_loads[idx] -= val
+                            asyncio.create_task(decrease_workload(index, e.value))
+
+                            old_index = index
+                            index = min(work_loads, key=work_loads.get)
+
+                            if index == old_index or work_loads[index] >= e.value:
+                                logging.warning("All clients are rate-limited. Sleeping.")
+                                await asyncio.sleep(e.value)
+
+                            client = multi_clients[index]
+                            work_loads[index] += 1
+                            media_session = await self.generate_media_session(client, file_id)
+
         except (TimeoutError, AttributeError):
             pass
         finally:

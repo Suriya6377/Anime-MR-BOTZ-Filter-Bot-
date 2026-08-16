@@ -9,12 +9,17 @@ class TokenParser:
         self.config_file = config_file
 
     def parse_from_env(self) -> Dict[int, str]:
-        self.tokens = dict(
-            (c + 1, t)
-            for c, (_, t) in enumerate(
-                filter(
-                    lambda n: n[0].startswith("MULTI_TOKEN"), sorted(environ.items())
+        helper_tokens = environ.get("HELPER_TOKENS")
+        if helper_tokens:
+            tokens_list = helper_tokens.split()
+            self.tokens = {i + 1: token for i, token in enumerate(tokens_list)}
+        else:
+            self.tokens = dict(
+                (c + 1, t)
+                for c, (_, t) in enumerate(
+                    filter(
+                        lambda n: n[0].startswith("BOT_TOKEN_") or n[0].startswith("MULTI_TOKEN"), sorted(environ.items())
+                    )
                 )
             )
-        )
         return self.tokens
