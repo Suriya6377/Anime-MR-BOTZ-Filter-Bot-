@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from info import *
+from info import MULTI_CLIENT
 from pyrogram import Client
 from Deendayal_botz.util.config_parser import TokenParser
 from . import multi_clients, work_loads, DeendayalBot
@@ -9,6 +10,11 @@ from . import multi_clients, work_loads, DeendayalBot
 async def initialize_clients():
     multi_clients[0] = DeendayalBot
     work_loads[0] = 0
+
+    if not MULTI_CLIENT:
+        print("Multi-Client Mode Disabled, using default client")
+        return
+
     all_tokens = TokenParser().parse_from_env()
     if not all_tokens:
         print("No additional clients found, using default client")
@@ -37,7 +43,6 @@ async def initialize_clients():
     clients = await asyncio.gather(*[start_client(i, token) for i, token in all_tokens.items()])
     multi_clients.update(dict(clients))
     if len(multi_clients) != 1:
-        MULTI_CLIENT = True
         print("Multi-Client Mode Enabled")
     else:
         print("No additional clients were initialized, using default client")
