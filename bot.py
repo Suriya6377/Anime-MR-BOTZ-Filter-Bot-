@@ -18,7 +18,7 @@ from info import *
 from utils import temp
 from Script import script
 from plugins import web_server, check_expired_premium, keep_alive
-from Deendayal_botz.Bot import DeendayalBot
+from Deendayal_botz.Bot import DeendayalBot, multi_clients
 from Deendayal_botz.util.keepalive import ping_server
 from Deendayal_botz.Bot.clients import initialize_clients
 
@@ -94,6 +94,10 @@ async def Deendayal_start():
     await web.TCPSite(app, bind_address, PORT).start()
     DeendayalBot.loop.create_task(keep_alive())
     await idle()
+    logging.info("Stopping all clients...")
+    for client in multi_clients.values():
+        await client.stop()
+    logging.info("All clients stopped")
     
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
