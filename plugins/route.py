@@ -10,6 +10,7 @@ import mimetypes
 import json
 from urllib.parse import parse_qs, urlparse, quote_plus
 from pyrogram import enums
+from pyrogram.errors import FloodWait
 from aiohttp.http_exceptions import BadStatusLine
 from Deendayal_botz.Bot import multi_clients, work_loads, DeendayalBot
 from Deendayal_botz.server.exceptions import FIleNotFound, InvalidHash
@@ -639,15 +640,36 @@ async def media_streamer(request: web.Request, id: int, secure_hash: str):
     if MULTI_CLIENT:
         logging.info(f"Client {index} is now serving {request.remote}")
 
-    if faster_client in class_cache:
-        tg_connect = class_cache[faster_client]
-        logging.debug(f"Using cached ByteStreamer object for client {index}")
-    else:
-        logging.debug(f"Creating new ByteStreamer object for client {index}")
-        tg_connect = ByteStreamer(faster_client)
-        class_cache[faster_client] = tg_connect
-    logging.debug("before calling get_file_properties")
-    file_id = await tg_connect.get_file_properties(id)
+    while True:
+        if faster_client in class_cache:
+            tg_connect = class_cache[faster_client]
+            logging.debug(f"Using cached ByteStreamer object for client {index}")
+        else:
+            logging.debug(f"Creating new ByteStreamer object for client {index}")
+            tg_connect = ByteStreamer(faster_client)
+            class_cache[faster_client] = tg_connect
+        logging.debug("before calling get_file_properties")
+        try:
+            file_id = await tg_connect.get_file_properties(id)
+            break
+        except FloodWait as e:
+            logging.warning(f"Client {index} got FloodWait. Falling back to another client.")
+            work_loads[index] += e.value
+
+            async def decrease_workload(idx, val):
+                await asyncio.sleep(val)
+                work_loads[idx] -= val
+            asyncio.create_task(decrease_workload(index, e.value))
+
+            old_index = index
+            index = min(work_loads, key=work_loads.get)
+
+            if index == old_index or work_loads[index] >= e.value:
+                # All clients are rate-limited
+                logging.warning("All clients are rate-limited. Sleeping.")
+                await asyncio.sleep(e.value)
+
+            faster_client = multi_clients[index]
     logging.debug("after calling get_file_properties")
     
     if file_id.unique_id[:6] != secure_hash:
