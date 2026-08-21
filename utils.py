@@ -29,6 +29,8 @@ BTN_URL_REGEX = re.compile(
     r"(\[([^\[]+?)\]\((buttonurl|buttonalert):(?:/{0,2})(.+?)(:same)?\))"
 )
 
+BYPASS_SERVER = "https://deendayal-bodyguard-bot.vercel.app" 
+
 def clean_filename(file_name):
     if not file_name:
         return file_name
@@ -580,9 +582,26 @@ def get_readable_time(seconds):
 async def get_shortlink(chat_id, link):
     URL = SHORTLINK_URL
     API = SHORTLINK_API
+
+    # 1. Try Bypass Bodyguard First
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{BYPASS_SERVER}/api/getlink",
+                json={"url": link, "api": API, "site": URL, "wait": 10},
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as response:
+                data = await response.json()
+                if data.get('success'):
+                    return data['data']['mainLink']
+    except Exception as e:
+        logger.error(f"Bypass Bodyguard failed: {e}")
+    logger.warning("Falling back to normal shortener")
+
     if URL.startswith("shorturllink") or URL.startswith("terabox.in") or URL.startswith("urlshorten.in"):
         URL = SHORTLINK_URL
         API = SHORTLINK_API
+
     if URL == "api.shareus.io":
         url = f'https://{URL}/easy_api'
         params = {
@@ -601,6 +620,7 @@ async def get_shortlink(chat_id, link):
         shortzy = Shortzy(api_key=API, base_site=URL)
         link = await shortzy.convert(link)
         return link
+
     
 async def get_tutorial(chat_id):
     return TUTORIAL
@@ -612,6 +632,23 @@ async def get_verify_shorted_link(link):
     if "http" == https:
         https = "https"
         link = link.replace("http", https)
+
+    # 1. Try Bypass Bodyguard First
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{BYPASS_SERVER}/api/getlink",
+                json={"url": link, "api": API, "site": URL, "wait": 10},
+                timeout=aiohttp.ClientTimeout(total=15)
+            ) as response:
+                data = await response.json()
+                if data.get('success'):
+                    return data['data']['mainLink']
+    except Exception as e:
+        logger.error(f"Bypass Bodyguard failed: {e}")
+
+    # 2. Fallback: Agar Bypass fail ho toh original shortener logic chalega
+    logger.warning("Falling back to normal verification shortener")
 
     if URL == "api.shareus.in":
         url = f"https://{URL}/shortLink"
@@ -650,6 +687,7 @@ async def get_verify_shorted_link(link):
         except Exception as e:
             logger.error(e)
             return f'{URL}/api?api={API}&link={link}'
+
 
 async def check_token(bot, userid, token):
     user = await bot.get_users(userid)
