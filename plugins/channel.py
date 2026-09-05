@@ -503,7 +503,7 @@ async def send_movie_update(bot, group_id):
 
             is_series = any(f.get("season") for f in movie_doc.get("files", []))
             if is_series:
-                button_list = get_episode_buttons(movie_doc, group_id)
+                button_list = []
             else:
                 button_list = get_quality_buttons(movie_doc, group_id)
 
@@ -561,7 +561,7 @@ async def update_movie_message(bot, group_id):
 
         is_series = any(f.get("season") for f in movie_doc.get("files", []))
         if is_series:
-            button_list = get_episode_buttons(movie_doc, group_id)
+            button_list = []
         else:
             button_list = get_quality_buttons(movie_doc, group_id)
 
