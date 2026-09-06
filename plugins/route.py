@@ -17,7 +17,6 @@ from Deendayal_botz.server.exceptions import FIleNotFound, InvalidHash
 from Deendayal_botz.zzint import StartTime, __version__
 from Deendayal_botz.util.custom_dl import ByteStreamer
 from Deendayal_botz.util.time_format import get_readable_time
-from Deendayal_botz.util.render_template import render_page
 import os
 from info import *
 
@@ -29,8 +28,22 @@ async def root_route_handler(request):
     return web.json_response("Deendayal_Botz")
 
 
+from urllib.parse import quote, urlparse
+
+def build_player_intent(stream_url: str, package: str, title: str = None) -> str:
+    parsed = urlparse(stream_url)
+    host_and_path = parsed.netloc + parsed.path
+    if parsed.query:
+        host_and_path += f"?{parsed.query}"
+    fallback = quote(f"https://play.google.com/store/apps/details?id={package}", safe="")
+    extras = f"scheme={parsed.scheme};package={package};type=video/*;"
+    if title:
+        extras += f"S.title={quote(title)};"
+    extras += f"S.browser_fallback_url={fallback};"
+    return f"intent://{host_and_path}#Intent;{extras}end"
+
 @routes.get(r"/watch/{path:\S+}", allow_head=True)
-async def stream_handler(request: web.Request):
+async def watch_handler(request: web.Request):
     try:
         path = request.match_info["path"]
         match = re.search(r"^([a-zA-Z0-9_-]{6})(\d+)$", path)
@@ -40,7 +53,110 @@ async def stream_handler(request: web.Request):
         else:
             id = int(re.search(r"(\d+)(?:\/\S+)?", path).group(1))
             secure_hash = request.rel_url.query.get("hash")
-        return web.Response(text=await render_page(id, secure_hash), content_type='text/html')
+
+        from Deendayal_botz.util.file_properties import get_file_ids
+        from Deendayal_botz.Bot import DeendayalBot
+        import urllib.parse
+
+        file_data = await get_file_ids(DeendayalBot, int(LOG_CHANNEL), int(id))
+        if file_data.unique_id[:6] != secure_hash:
+            raise InvalidHash
+
+        stream_url = urllib.parse.urljoin(URL, f"{id}/{urllib.parse.quote_plus(file_data.file_name)}?hash={secure_hash}")
+
+        # VLC Player intent
+        vlc_url = build_player_intent(stream_url, "org.videolan.vlc", file_data.file_name)
+
+        # MX Player intent
+        mx_url = build_player_intent(stream_url, "com.mxtech.videoplayer.ad", file_data.file_name)
+
+        html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Watch Video</title>
+    <style>
+        body {{
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: sans-serif;
+        }}
+        .container {{
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 10px;
+            box-sizing: border-box;
+        }}
+        .video-wrapper {{
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+        }}
+        video {{
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }}
+        .buttons {{
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }}
+        .btn {{
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+        }}
+        .btn-vlc {{ background-color: #FF8C00; }}
+        .btn-mx {{ background-color: #F84C4C; }}
+        .icon {{
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-wrapper">
+            <video controls autoplay playsinline>
+                <source src="{stream_url}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="buttons">
+            <a href="{vlc_url}" class="btn btn-vlc">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 2L3 20h18L12 2zm0 3.8l5.8 12.2H6.2L12 5.8z"/></svg>
+                Open in VLC
+            </a>
+            <a href="{mx_url}" class="btn btn-mx">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                Open in MX Player
+            </a>
+        </div>
+    </div>
+</body>
+</html>"""
+        return web.Response(text=html, content_type='text/html')
     except InvalidHash as e:
         raise web.HTTPForbidden(text=e.message)
     except FIleNotFound as e:
@@ -677,60 +793,93 @@ async def media_streamer(request: web.Request, id: int, secure_hash: str):
         raise InvalidHash
     
     file_size = file_id.file_size
+    mime_type = file_id.mime_type or "video/mp4"
+    file_name = file_id.file_name
+
+    if not file_name:
+        try:
+            file_name = f"{secrets.token_hex(2)}.{mime_type.split('/')[1]}"
+        except (IndexError, AttributeError):
+            file_name = f"{secrets.token_hex(2)}.unknown"
+
+    from_bytes = 0
+    until_bytes = file_size - 1
 
     if range_header:
-        from_bytes, until_bytes = range_header.replace("bytes=", "").split("-")
-        from_bytes = int(from_bytes)
-        until_bytes = int(until_bytes) if until_bytes else file_size - 1
-    else:
-        from_bytes = request.http_range.start or 0
-        until_bytes = (request.http_range.stop or file_size) - 1
+        range_match = re.search(r"bytes=(\d*)-(\d*)", range_header)
+        if range_match:
+            start_str = range_match.group(1)
+            end_str = range_match.group(2)
 
-    if (until_bytes > file_size) or (from_bytes < 0) or (until_bytes < from_bytes):
+            if start_str and end_str:
+                from_bytes = int(start_str)
+                until_bytes = int(end_str)
+            elif start_str:
+                from_bytes = int(start_str)
+                until_bytes = file_size - 1
+            elif end_str:
+                length = int(end_str)
+                from_bytes = file_size - length
+                until_bytes = file_size - 1
+
+    if from_bytes >= file_size or from_bytes < 0:
         return web.Response(
             status=416,
             body="416: Range not satisfiable",
             headers={"Content-Range": f"bytes */{file_size}"},
         )
+    if until_bytes >= file_size:
+        until_bytes = file_size - 1
+    if until_bytes < from_bytes:
+        until_bytes = from_bytes
 
-    chunk_size = 1024 * 1024
     until_bytes = min(until_bytes, file_size - 1)
-
-    offset = from_bytes - (from_bytes % chunk_size)
-    first_part_cut = from_bytes - offset
-    last_part_cut = until_bytes % chunk_size + 1
-
     req_length = until_bytes - from_bytes + 1
-    part_count = math.ceil(until_bytes / chunk_size) - math.floor(offset / chunk_size)
-    body = tg_connect.yield_file(
-        file_id, index, offset, first_part_cut, last_part_cut, part_count, chunk_size
-    )
 
-    mime_type = file_id.mime_type
-    file_name = file_id.file_name
-    disposition = "attachment"
+    async def byte_stream_generator(client, msg_id):
+        chunk_size = 1024 * 1024
+        offset_chunk = from_bytes // chunk_size
+        limit_chunk = math.ceil((until_bytes + 1) / chunk_size) - offset_chunk
 
-    if mime_type:
-        if not file_name:
-            try:
-                file_name = f"{secrets.token_hex(2)}.{mime_type.split('/')[1]}"
-            except (IndexError, AttributeError):
-                file_name = f"{secrets.token_hex(2)}.unknown"
-    else:
-        if file_name:
-            mime_type = mimetypes.guess_type(file_id.file_name)
-        else:
-            mime_type = "application/octet-stream"
-            file_name = f"{secrets.token_hex(2)}.unknown"
+        message = await client.get_messages(int(LOG_CHANNEL), msg_id)
 
-    return web.Response(
+        current_byte = offset_chunk * chunk_size
+        async for chunk in client.stream_media(message, limit=limit_chunk, offset=offset_chunk):
+            chunk_start = current_byte
+            chunk_end = current_byte + len(chunk)
+
+            # Calculate relative slice indices safely
+            slice_start = max(0, from_bytes - chunk_start)
+            slice_end = min(len(chunk), until_bytes + 1 - chunk_start)
+
+            yield chunk[slice_start:slice_end]
+            current_byte = chunk_end
+            if current_byte > until_bytes:
+                break
+
+    body = byte_stream_generator(faster_client, id)
+
+    headers = {
+        "Content-Type": mime_type,
+        "Content-Range": f"bytes {from_bytes}-{until_bytes}/{file_size}",
+        "Content-Length": str(req_length),
+        "Content-Disposition": f'attachment; filename="{file_name}"',
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "no-cache",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length",
+        "Connection": "keep-alive"
+    }
+
+
+    response = web.StreamResponse(
         status=206 if range_header else 200,
-        body=body,
-        headers={
-            "Content-Type": f"{mime_type}",
-            "Content-Range": f"bytes {from_bytes}-{until_bytes}/{file_size}",
-            "Content-Length": str(req_length),
-            "Content-Disposition": f'{disposition}; filename="{file_name}"',
-            "Accept-Ranges": "bytes",
-        },
+        headers=headers
     )
+    await response.prepare(request)
+
+    async for chunk in body:
+        await response.write(chunk)
+
+
+    return response
